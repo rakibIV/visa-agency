@@ -34,6 +34,12 @@ class Country(BaseModel):
         blank=True,
     )
 
+    language = models.CharField(
+    max_length=50,  # Increased to safely fit any language name
+    default="English",
+    help_text="The official language of the country",
+    )
+
     flag = models.ImageField(
         upload_to="countries/flags/",
         validators=[
@@ -42,6 +48,30 @@ class Country(BaseModel):
         ],
         blank=True,
         null=True,
+    )
+
+    currency = models.CharField(
+        max_length=3,
+        default="USD",
+        help_text="The official 3-letter currency code (e.g., USD, EUR)",
+    )
+
+    capital = models.CharField(
+    max_length=100,
+    blank=True,
+    help_text="The capital city of the country (e.g., Washington D.C., Paris).",
+    )
+
+    time_zone = models.CharField(
+    max_length=50,
+    default="UTC",
+    help_text="The primary time zone of the country.",
+    )
+
+    processing_time = models.CharField(
+    max_length=50,
+    blank=True,
+    help_text="Estimated processing time phrase (e.g., '3-5 business days', '2 weeks').",
     )
 
     image = models.ImageField(
@@ -257,7 +287,7 @@ class CountrySEO(BaseModel):
         blank=True,
     )
 
-    keywords = models.TextField(
+    meta_keywords = models.TextField(
         blank=True,
         help_text="Separate keywords with commas.",
     )

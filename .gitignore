@@ -1,0 +1,4 @@
+__pycache_/
+visa_env/
+db.sqlite3/
+media/

@@ -14,6 +14,7 @@ class CountryRequirementSerializer(serializers.ModelSerializer):
         model = CountryRequirement
         fields = [
             "id",
+            "country",
             "requirement_type",
             "title",
             "description",
@@ -26,6 +27,7 @@ class CountryFAQSerializer(serializers.ModelSerializer):
         model = CountryFAQ
         fields = [
             "id",
+            "country",
             "question",
             "answer",
             "display_order",
@@ -37,6 +39,7 @@ class CountryGallerySerializer(serializers.ModelSerializer):
         model = CountryGallery
         fields = [
             "id",
+            "country",
             "image",
             "caption",
             "display_order",
@@ -48,10 +51,10 @@ class CountrySEOSerializer(serializers.ModelSerializer):
         model = CountrySEO
         fields = [
             "meta_title",
+            "country",
             "meta_description",
             "meta_keywords",
             "canonical_url",
-            "schema_markup",
         ]
 
 
@@ -63,16 +66,11 @@ class CountrySerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "flag",
-            "featured_image",
+            "is_featured",
             "currency",
             "language",
             "processing_time",
-            "featured_image",
             "capital",
-            "currency",
-            "language",
-            "processing_time",
-            "visa_required",
             "time_zone",
         ]
 
@@ -95,6 +93,7 @@ class CountryDetailSerializer(serializers.ModelSerializer):
 
     seo = CountrySEOSerializer(
         read_only=True,
+        allow_null=True,
     )
 
     class Meta:
@@ -104,14 +103,13 @@ class CountryDetailSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "flag",
-            "featured_image",
+            "is_featured",
             "short_description",
             "description",
             "capital",
             "currency",
             "language",
             "time_zone",
-            "visa_required",
             "processing_time",
             "requirements",
             "gallery",

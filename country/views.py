@@ -1,13 +1,9 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.viewsets import ModelViewSet
+from django.shortcuts import get_object_or_404
 
-from rest_framework.generics import (
-    CreateAPIView,
-    DestroyAPIView,
-    ListAPIView,
-    RetrieveAPIView,
-    UpdateAPIView,
-)
+from .models import *
 
 from .filters import CountryFilter
 from .models import Country
@@ -15,15 +11,17 @@ from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CountrySerializer,
     CountryDetailSerializer,
+    CountryFAQSerializer,
+    CountryGallerySerializer,
+    CountryRequirementSerializer,
+    CountrySEOSerializer,
 )
 
 
-class CountryListAPIView(ListAPIView):
+class CountryViewSet(ModelViewSet):
     queryset = Country.objects.filter(
         is_active=True,
     )
-
-    serializer_class = CountrySerializer
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -31,8 +29,8 @@ class CountryListAPIView(ListAPIView):
 
     filter_backends = [
         DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
+        SearchFilter,
+        OrderingFilter,
     ]
 
     filterset_class = CountryFilter
@@ -54,44 +52,84 @@ class CountryListAPIView(ListAPIView):
         "name",
     ]
 
-
-class CountryDetailAPIView(RetrieveAPIView):
-    queryset = Country.objects.filter(
-        is_active=True,
-    )
-
-    serializer_class = CountryDetailSerializer
-
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
-
     lookup_field = "slug"
+    lookup_url_kwarg = "slug"
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return CountryDetailSerializer
+        return CountrySerializer
+
+    def get_queryset(self):
+        if self.action == "retrieve":
+            return (
+                Country.objects
+                .filter(is_active=True)
+                .prefetch_related(
+                    "requirements",
+                    "faqs",
+                    "gallery",
+                )
+                .select_related(
+                    "seo",
+                )
+            )
+
+        return Country.objects.filter(
+            is_active=True,
+        )
+    
 
 
-class CountryCreateAPIView(CreateAPIView):
-    queryset = Country.objects.all()
-
-    serializer_class = CountryDetailSerializer
-
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
+class CountryNestedViewSetMixin:
+    def get_country(self):
+        country_value = self.kwargs.get("country_slug") or self.kwargs.get("country_pk")
+        if not country_value:
+            raise ValueError("Country identifier is missing from the nested URL")
+        return get_object_or_404(Country, slug=country_value)
 
 
-class CountryUpdateAPIView(UpdateAPIView):
-    queryset = Country.objects.all()
+class CountryFAQViewSet(CountryNestedViewSetMixin, ModelViewSet):
+    serializer_class = CountryFAQSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
-    serializer_class = CountryDetailSerializer
+    def get_queryset(self):
+        return CountryFAQ.objects.filter(country=self.get_country())
 
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
+    def perform_create(self, serializer):
+        serializer.save(country=self.get_country())
 
 
-class CountryDeleteAPIView(DestroyAPIView):
-    queryset = Country.objects.all()
+class CountryGalleryViewSet(CountryNestedViewSetMixin, ModelViewSet):
+    serializer_class = CountryGallerySerializer
+    permission_classes = [IsAdminOrReadOnly]
 
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
+    def get_queryset(self):
+        return CountryGallery.objects.filter(country=self.get_country())
+
+    def perform_create(self, serializer):
+        serializer.save(country=self.get_country())
+
+
+class CountryRequirementViewSet(CountryNestedViewSetMixin, ModelViewSet):
+    serializer_class = CountryRequirementSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["requirement_type"]  # Handled country filtering via URL route instead
+
+    def get_queryset(self):
+        return CountryRequirement.objects.filter(country=self.get_country())
+
+    def perform_create(self, serializer):
+        serializer.save(country=self.get_country())
+
+
+
+
+
+class CountrySEOViewSet(ModelViewSet):
+    queryset = CountrySEO.objects.all()
+    serializer_class = CountrySEOSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['country']
