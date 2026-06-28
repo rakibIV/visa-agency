@@ -1,0 +1,247 @@
+from django.db import models
+from django.utils.text import slugify
+
+from core.models import BaseModel
+from core.validators import (
+    image_extension_validator,
+    validate_image_size,
+)
+
+from core.choices import SocialPlatform
+
+class AgencyService(BaseModel):
+    title = models.CharField(
+        max_length=150,
+        unique=True,
+        db_index=True,
+    )
+
+    slug = models.SlugField(
+        max_length=170,
+        unique=True,
+        blank=True,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    icon = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="React icon name or FontAwesome class.",
+    )
+
+    is_featured = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+
+    class Meta:
+        ordering = [
+            "display_order",
+            "title",
+        ]
+
+        verbose_name = "Agency Service"
+        verbose_name_plural = "Agency Services"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class EmailTemplate(BaseModel):
+    name = models.CharField(
+        max_length=150,
+        unique=True,
+    )
+
+    subject = models.CharField(
+        max_length=255,
+    )
+
+    body = models.TextField(
+        help_text="""
+Available Variables:
+
+{{ applicant_name }}
+
+{{ applicant_id }}
+
+{{ passport_number }}
+
+{{ visa }}
+
+{{ country }}
+
+{{ staff }}
+
+{{ current_status }}
+""",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "name",
+        ]
+
+        verbose_name = "Email Template"
+        verbose_name_plural = "Email Templates"
+
+    def __str__(self):
+        return self.name
+
+
+class CompanyInformation(BaseModel):
+    company_name = models.CharField(
+        max_length=255,
+    )
+
+    company_logo = models.ImageField(
+        upload_to="company/logo/",
+        validators=[
+            image_extension_validator,
+            validate_image_size,
+        ],
+        blank=True,
+        null=True,
+    )
+
+    favicon = models.ImageField(
+        upload_to="company/favicon/",
+        validators=[
+            image_extension_validator,
+            validate_image_size,
+        ],
+        blank=True,
+        null=True,
+    )
+
+
+    phone = models.CharField(
+        max_length=30,
+    )
+
+
+    address = models.TextField()
+
+
+    about = models.TextField(
+        blank=True,
+    )
+
+    mission = models.TextField(
+        blank=True,
+    )
+
+    vision = models.TextField(
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        verbose_name = "Company Information"
+        verbose_name_plural = "Company Information"
+
+    def __str__(self):
+        return self.company_name
+    
+
+
+
+class Office(BaseModel):
+
+    company = models.ForeignKey(
+    CompanyInformation,
+    on_delete=models.CASCADE,
+    related_name="offices",
+    )
+    office_name = models.CharField(
+        max_length=150,
+    )
+
+    email = models.EmailField(
+        blank=True,
+    )
+
+    phone = models.CharField(
+        max_length=30,
+    )
+
+
+    address = models.TextField()
+
+
+    office_hours = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Example: Sat - Thu (9:00 AM - 6:00 PM)",
+    )
+
+    is_head_office = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+
+    class Meta:
+        ordering = [
+            "display_order",
+            "office_name",
+        ]
+
+        verbose_name = "Office"
+
+        verbose_name_plural = "Offices"
+
+    def __str__(self):
+        return self.office_name
+    
+
+class SocialLink(BaseModel):
+    company = models.ForeignKey(
+        CompanyInformation,
+        on_delete=models.CASCADE,
+        related_name="social_links",
+    )
+
+    platform = models.CharField(
+        max_length=50,
+        choices=SocialPlatform.choices,
+    )
+
+    url = models.URLField()
+
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )

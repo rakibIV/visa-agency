@@ -1,5 +1,4 @@
 from decimal import Decimal
-import os
 import re
 
 from django.core.exceptions import ValidationError

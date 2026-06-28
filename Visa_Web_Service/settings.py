@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     "cms",
     "communication",
     "staff",
-    "api"
+    "api",
+    "agency",
 
 ]
 

@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class ApplicantStatus(models.TextChoices):
     PENDING = "PENDING", "Pending"
     PROCESSING = "PROCESSING", "Processing"
@@ -44,10 +43,27 @@ class StaffDesignation(models.TextChoices):
     MARKETING = "MARKETING", "Marketing"
     OTHER = "OTHER", "Other"
 
+class SocialPlatform(models.TextChoices):
+    FACEBOOK = "FACEBOOK", "Facebook"
+    INSTAGRAM = "INSTAGRAM", "Instagram"
+    X = "X", "X (Twitter)"
+    LINKEDIN = "LINKEDIN", "LinkedIn"
+    YOUTUBE = "YOUTUBE", "YouTube"
+    WHATSAPP = "WHATSAPP", "WhatsApp"
+    PINTEREST = "PINTEREST", "Pinterest"
+    TIKTOK = "TIKTOK", "TikTok"
+    OTHER = "OTHER", "Other"
 
-from django.db import models
 
 
 class RequirementType(models.TextChoices):
     VISA = "VISA", "Visa Requirement"
     DOCUMENT = "DOCUMENT", "Document Requirement"
+
+
+class VisaRequirementType(models.TextChoices):
+    DOCUMENT = "DOCUMENT", "Document"
+    ELIGIBILITY = "ELIGIBILITY", "Eligibility"
+    BENEFIT = "BENEFIT", "Benefit"
+    RESTRICTION = "RESTRICTION", "Restriction"
+    NOTE = "NOTE", "Important Note"

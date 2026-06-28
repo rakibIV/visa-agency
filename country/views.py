@@ -3,10 +3,15 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import ModelViewSet
 from django.shortcuts import get_object_or_404
 
-from .models import *
+from .models import (
+    Country,
+    CountryFAQ,
+    CountryGallery,
+    CountryRequirement,
+    CountrySEO,
+)
 
 from .filters import CountryFilter
-from .models import Country
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CountrySerializer,
