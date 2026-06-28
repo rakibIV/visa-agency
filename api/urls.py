@@ -20,23 +20,9 @@ country_router = routers.NestedDefaultRouter(
     lookup="country", # This creates the variable name 'country_pk' for your views
 )
 
-country_router.register(
-    "requirements",
-    CountryRequirementViewSet,
-    basename="country-requirements",
-)
-
-country_router.register(
-    "faqs",
-    CountryFAQViewSet,
-    basename="country-faqs",
-)
-
-country_router.register(
-    "gallery",
-    CountryGalleryViewSet,
-    basename="country-gallery",
-)
+country_router.register('requirements', CountryRequirementViewSet, basename='country-requirement')
+country_router.register('faqs', CountryFAQViewSet, basename='country-faq')
+country_router.register('gallery', CountryGalleryViewSet, basename='country-gallery')
 
 # 3. Correctly combine both parent and child URLs into urlpatterns
 urlpatterns = [
