@@ -187,7 +187,206 @@ class Visa(BaseModel):
         return f"{self.country.name} - {self.name}"
     
 
+class VisaJob(BaseModel):
+    visa = models.ForeignKey(
+        Visa,
+        on_delete=models.CASCADE,
+        related_name="jobs",
+    )
 
+    title = models.CharField(
+        max_length=200,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    minimum_salary = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    maximum_salary = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="EUR",
+    )
+
+    vacancies = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    experience_required = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Example: Fresher, 1 Year, 2 Years",
+    )
+
+    duty_days_per_week = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Example: 6",
+    )
+
+    duty_hours_per_day = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Example: 8.0",
+    )
+
+    overtime_available = models.BooleanField(
+        default=False,
+    )
+
+    overtime_rate = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Example: €8/hour",
+    )
+
+    accommodation = models.BooleanField(
+        default=False,
+    )
+
+    food = models.BooleanField(
+        default=False,
+    )
+
+    medical = models.BooleanField(
+        default=False,
+    )
+
+    transportation = models.BooleanField(
+        default=False,
+    )
+
+    insurance = models.BooleanField(
+        default=False,
+    )
+
+    air_ticket = models.BooleanField(
+        default=False,
+        help_text="Provided by employer.",
+    )
+
+    contract_duration_months = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    probation_period_months = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    location = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Example: Milan, Rome",
+    )
+
+    language_requirement = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    education_requirement = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    gender_preference = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Optional",
+    )
+
+    age_requirement = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Example: 21-35 Years",
+    )
+
+    is_featured = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+
+    class Meta:
+        ordering = [
+            "display_order",
+            "title",
+        ]
+
+        verbose_name = "Visa Job"
+
+        verbose_name_plural = "Visa Jobs"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "visa",
+                    "title",
+                ],
+                name="unique_visa_job",
+            )
+        ]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "visa",
+                    "is_active",
+                ]
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.visa.name} - {self.title}"
+    
+
+
+class JobFacility(BaseModel):
+    job = models.ForeignKey(
+        VisaJob,
+        on_delete=models.CASCADE,
+        related_name="facilities",
+    )
+
+    title = models.CharField(
+        max_length=100,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
 
 
 class VisaRequirement(BaseModel):
