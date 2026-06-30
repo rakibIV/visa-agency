@@ -89,18 +89,18 @@ class OfficeViewSet(ModelViewSet):
     ]
 
     search_fields = [
-        "office_name",
+        "branch_name",
         "address",
     ]
 
     ordering_fields = [
         "display_order",
-        "office_name",
+        "branch_name",
     ]
 
     ordering = [
         "display_order",
-        "office_name",
+        "branch_name",
     ]
 
 

@@ -1,15 +1,5 @@
 from django.db import models
 
-class ApplicantStatus(models.TextChoices):
-    PENDING = "PENDING", "Pending"
-    PROCESSING = "PROCESSING", "Processing"
-    DOCUMENT_REQUIRED = "DOCUMENT_REQUIRED", "Document Required"
-    EMBASSY = "EMBASSY", "At Embassy"
-    APPROVED = "APPROVED", "Approved"
-    REJECTED = "REJECTED", "Rejected"
-    CANCELLED = "CANCELLED", "Cancelled"
-
-
 class PaymentMethod(models.TextChoices):
     CASH = "CASH", "Hand Cash"
     BANK = "BANK", "Bank Transfer"
@@ -67,3 +57,23 @@ class VisaRequirementType(models.TextChoices):
     BENEFIT = "BENEFIT", "Benefit"
     RESTRICTION = "RESTRICTION", "Restriction"
     NOTE = "NOTE", "Important Note"
+
+
+class MaritalStatus(models.TextChoices):
+    SINGLE = "SINGLE", "Single"
+    MARRIED = "MARRIED", "Married"
+    DIVORCED = "DIVORCED", "Divorced"
+    WIDOWED = "WIDOWED", "Widowed"
+
+
+class DocumentType(models.TextChoices):
+    PASSPORT = "PASSPORT", "Passport"
+    BIRTH_CERTIFICATE = "BIRTH_CERTIFICATE", "Birth Certificate"
+    NID = "NID", "National ID"
+    PHOTO = "PHOTO", "Photograph"
+    IELTS = "IELTS", "IELTS Certificate"
+    BANK_STATEMENT = "BANK_STATEMENT", "Bank Statement"
+    MEDICAL = "MEDICAL", "Medical Report"
+    POLICE_CLEARANCE = "POLICE_CLEARANCE", "Police Clearance"
+    EDUCATIONAL = "EDUCATIONAL", "Educational Certificate"
+    OTHER = "OTHER", "Other"

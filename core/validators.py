@@ -104,4 +104,22 @@ pdf_extension_validator = FileExtensionValidator(
     ]
 )
 
+# -----------------------------
+# Applicant Document (image or PDF)
+# -----------------------------
+document_extension_validator = FileExtensionValidator(
+    allowed_extensions=[
+        "pdf",
+        "jpg",
+        "jpeg",
+        "png",
+    ]
+)
 
+def validate_document_size(file):
+    max_size = 10 * 1024 * 1024  # 10 MB
+
+    if file.size > max_size:
+        raise ValidationError(
+            "Document size cannot exceed 10 MB."
+        )

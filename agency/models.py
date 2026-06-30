@@ -174,9 +174,9 @@ class Office(BaseModel):
     company = models.ForeignKey(
     CompanyInformation,
     on_delete=models.CASCADE,
-    related_name="offices",
+    related_name="branches",
     )
-    office_name = models.CharField(
+    branch_name = models.CharField(
         max_length=150,
     )
 
@@ -213,15 +213,15 @@ class Office(BaseModel):
     class Meta:
         ordering = [
             "display_order",
-            "office_name",
+            "branch_name",
         ]
 
-        verbose_name = "Office"
+        verbose_name = "Branch"
 
-        verbose_name_plural = "Offices"
+        verbose_name_plural = "Branches"
 
     def __str__(self):
-        return self.office_name
+        return self.branch_name
     
 
 class SocialLink(BaseModel):

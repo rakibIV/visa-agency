@@ -37,7 +37,7 @@ class CompanyInformationAdmin(admin.ModelAdmin):
 @admin.register(Office)
 class OfficeAdmin(admin.ModelAdmin):
     list_display = (
-        "office_name",
+        "branch_name",
         "phone",
         "email",
         "is_head_office",
@@ -51,14 +51,14 @@ class OfficeAdmin(admin.ModelAdmin):
     )
 
     search_fields = (
-        "office_name",
+        "branch_name",
         "phone",
         "email",
     )
 
     ordering = (
         "display_order",
-        "office_name",
+        "branch_name",
     )
 
     readonly_fields = (

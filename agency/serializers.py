@@ -28,7 +28,8 @@ class OfficeSerializer(serializers.ModelSerializer):
         model = Office
         fields = [
             "id",
-            "office_name",
+            "company",
+            "branch_name",
             "email",
             "phone",
             "address",
@@ -49,6 +50,7 @@ class SocialLinkSerializer(serializers.ModelSerializer):
         model = SocialLink
         fields = [
             "id",
+            "company",
             "platform",
             "platform_name",
             "url",
@@ -81,7 +83,7 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
 
 class CompanyInformationDetailSerializer(serializers.ModelSerializer):
 
-    offices = OfficeSerializer(
+    branches = OfficeSerializer(
         many=True,
         read_only=True,
     )
@@ -103,7 +105,7 @@ class CompanyInformationDetailSerializer(serializers.ModelSerializer):
             "about",
             "mission",
             "vision",
-            "offices",
+            "branches",
             "social_links",
             "created_at",
             "updated_at",
