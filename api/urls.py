@@ -2,83 +2,118 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 
-from country.views import (
-    CountryViewSet, 
-    CountryRequirementViewSet, 
-    CountryGalleryViewSet, 
-    CountryFAQViewSet
-)
+# Consolidated Imports by App
 from agency.views import (
+    AgencyServiceViewSet,
     CompanyInformationViewSet,
+    EmailTemplateViewSet,
     OfficeViewSet,
     SocialLinkViewSet,
-    AgencyServiceViewSet,
-    EmailTemplateViewSet,
 )
-from visa.views import (
-    VisaCategoryViewSet,
-    VisaViewSet,
-    VisaRequirementViewSet,
-    VisaStepViewSet,
-    VisaFAQViewSet,
-    VisaSEOViewSet,
-    VisaJobViewSet,
-    JobFacilityViewSet,
+from applicant.views import (
+    AgreementTemplateViewSet,
+    ApplicantAddressViewSet,
+    ApplicantDocumentViewSet,
+    ApplicantNoteViewSet,
+    ApplicantPaymentViewSet,
+    ApplicantStatusHistoryViewSet,
+    ApplicantTagViewSet,
+    ApplicantViewSet,
+    ApplicationStatusViewSet,
 )
-
+from country.views import (
+    CountryFAQViewSet,
+    CountryGalleryViewSet,
+    CountryRequirementViewSet,
+    CountryViewSet,
+)
 from staff.views import (
     DesignationViewSet,
-    StaffViewSet,
-    StaffMonthlySlotViewSet,
     StaffDocumentViewSet,
     StaffEmergencyContactViewSet,
+    StaffMonthlySlotViewSet,
+    StaffViewSet,
+)
+from visa.views import (
+    JobFacilityViewSet,
+    VisaCategoryViewSet,
+    VisaFAQViewSet,
+    VisaJobViewSet,
+    VisaRequirementViewSet,
+    VisaSEOViewSet,
+    VisaStepViewSet,
+    VisaViewSet,
 )
 
 # ==========================================
 # 1. BASE ROUTER (Top-Level Endpoints)
 # ==========================================
 router = DefaultRouter()
+
+# Country & Agency Core
 router.register("countries", CountryViewSet, basename="country")
 router.register("companies", CompanyInformationViewSet, basename="company")
-router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
-router.register("visas", VisaViewSet, basename="visa")
 router.register("branches", OfficeViewSet, basename="office")
 router.register("social-links", SocialLinkViewSet, basename="social-link")
 router.register("agency-services", AgencyServiceViewSet, basename="agency-service")
 router.register("email-templates", EmailTemplateViewSet, basename="email-template")
 
-# Staff Core Endpoints
+# Visa Core
+router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
+router.register("visas", VisaViewSet, basename="visa")
+
+# Staff Core 
 router.register("designations", DesignationViewSet, basename="designation")
 router.register("staffs", StaffViewSet, basename="staff")
 
-# Staff Child Routing
+# Applicant Core
+router.register("application-statuses", ApplicationStatusViewSet, basename="application-status")
+router.register("applicant-tags", ApplicantTagViewSet, basename="applicant-tag")
+router.register("agreement-templates", AgreementTemplateViewSet, basename="agreement-template")
+router.register("applicants", ApplicantViewSet, basename="applicant")
+
+
+# ==========================================
+# 2. CHILD ROUTERS (Level 1 Nesting)
+# ==========================================
+
+# Country Nesting
+country_router = NestedDefaultRouter(router, "countries", lookup="country")
+country_router.register("requirements", CountryRequirementViewSet, basename="country-requirement")
+country_router.register("faqs", CountryFAQViewSet, basename="country-faq")
+country_router.register("gallery", CountryGalleryViewSet, basename="country-gallery")
+
+# Visa Nesting
+visa_router = NestedDefaultRouter(router, "visas", lookup="visa")
+visa_router.register("requirements", VisaRequirementViewSet, basename="visa-requirement")
+visa_router.register("jobs", VisaJobViewSet, basename="visa-job")
+visa_router.register("steps", VisaStepViewSet, basename="visa-step")
+visa_router.register("faqs", VisaFAQViewSet, basename="visa-faq")
+visa_router.register("seo", VisaSEOViewSet, basename="visa-seo")
+
+# Staff Nesting
 staff_router = NestedDefaultRouter(router, "staffs", lookup="staff")
 staff_router.register("monthly-slots", StaffMonthlySlotViewSet, basename="staff-monthly-slot")
 staff_router.register("documents", StaffDocumentViewSet, basename="staff-document")
 staff_router.register("emergency-contacts", StaffEmergencyContactViewSet, basename="staff-emergency-contact")
 
-# ==========================================
-# 2. CHILD ROUTERS (Level 1 Nesting)
-# ==========================================
-country_router = NestedDefaultRouter(router, "countries", lookup="country")
-country_router.register('requirements', CountryRequirementViewSet, basename='country-requirement')
-country_router.register('faqs', CountryFAQViewSet, basename='country-faq')
-country_router.register('gallery', CountryGalleryViewSet, basename='country-gallery')
+# Applicant Nesting
+applicant_router = NestedDefaultRouter(router, "applicants", lookup="applicant")
+applicant_router.register("addresses", ApplicantAddressViewSet, basename="applicant-address")
+applicant_router.register("payments", ApplicantPaymentViewSet, basename="applicant-payment")
+applicant_router.register("documents", ApplicantDocumentViewSet, basename="applicant-document")
+applicant_router.register("notes", ApplicantNoteViewSet, basename="applicant-note")
+applicant_router.register("status-history", ApplicantStatusHistoryViewSet, basename="applicant-status-history")
 
-
-visa_router = NestedDefaultRouter(router, "visas", lookup="visa")
-visa_router.register('requirements', VisaRequirementViewSet, basename='visa-requirement')
-visa_router.register("jobs", VisaJobViewSet, basename="visa-job")
-visa_router.register('steps', VisaStepViewSet, basename='visa-step')
-visa_router.register('faqs', VisaFAQViewSet, basename='visa-faq')
-visa_router.register('seo', VisaSEOViewSet, basename='visa-seo')
 
 # ==========================================
 # 3. GRANDCHILD ROUTERS (Level 2 Nesting)
 # ==========================================
-# This links underneath the "jobs" registration inside the visa_router tree
+
+# Visa -> Jobs -> Facilities
 job_router = NestedDefaultRouter(visa_router, "jobs", lookup="job")
 job_router.register("facilities", JobFacilityViewSet, basename="job-facility")
+
 
 # ==========================================
 # 4. URLPATTERNS REGISTRATION
@@ -89,4 +124,5 @@ urlpatterns = [
     path("", include(visa_router.urls)),
     path("", include(job_router.urls)),
     path("", include(staff_router.urls)),
-] 
+    path("", include(applicant_router.urls)),
+]

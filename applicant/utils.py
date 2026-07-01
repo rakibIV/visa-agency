@@ -1,8 +1,3 @@
-from django.utils.text import slugify
-
-from .models import Applicant
-
-
 def generate_application_id():
     """
     Generates sequential application IDs.
@@ -12,6 +7,8 @@ def generate_application_id():
         APP-000002
         APP-000003
     """
+
+    from .models import Applicant
 
     last_applicant = (
         Applicant.objects.order_by("-id")

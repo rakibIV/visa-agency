@@ -270,6 +270,12 @@ class StaffMonthlySlotAdmin(admin.ModelAdmin):
         "allocation_month",
     ]
 
+    search_fields = [
+        "staff__employee_id",
+        "staff__user__first_name",
+        "staff__user__last_name",
+    ]
+
     autocomplete_fields = [
         "staff",
     ]
