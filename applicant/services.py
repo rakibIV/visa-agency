@@ -1,4 +1,6 @@
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
+from .currency import get_exchange_rate
 
 from .models import (
     Applicant,
@@ -121,7 +123,6 @@ def update_applicant_address(
     return applicant_address
 
 
-
 @transaction.atomic
 def create_payment(
     *,
@@ -130,7 +131,6 @@ def create_payment(
     payment_method,
     currency,
     amount,
-    exchange_rate,
     received_by=None,
     receipt_number="",
     reference="",
@@ -140,6 +140,7 @@ def create_payment(
     Creates a payment for an applicant.
 
     - Auto payment number
+    - Fetches live exchange rate from Currency Freaks
     - Calculates euro amount
     """
 
@@ -147,9 +148,14 @@ def create_payment(
         applicant,
     )
 
+    exchange_rate = get_exchange_rate(
+        from_currency=currency,
+        to_currency="EUR",
+    )
+
     euro_amount = (
         Decimal(amount)
-        * Decimal(exchange_rate)
+        * exchange_rate
     ).quantize(
         Decimal("0.01")
     )
@@ -171,7 +177,6 @@ def create_payment(
 
     return payment
 
-
 @transaction.atomic
 def update_payment(
     *,
@@ -180,6 +185,7 @@ def update_payment(
 ):
     """
     Updates an existing payment.
+    Re-fetches exchange rate if currency changes.
     """
 
     for field, value in payment_data.items():
@@ -189,9 +195,14 @@ def update_payment(
             value,
         )
 
+    payment.exchange_rate = get_exchange_rate(
+        from_currency=payment.currency,
+        to_currency="EUR",
+    )
+
     payment.euro_amount = (
         Decimal(payment.amount)
-        * Decimal(payment.exchange_rate)
+        * payment.exchange_rate
     ).quantize(
         Decimal("0.01")
     )
@@ -259,8 +270,10 @@ def assign_slot(
     ).count()
 
     if used >= allocated:
-        raise ValueError(
-            "This staff has no remaining slot."
+        raise ValidationError(
+        {
+            "slot": "This staff has no remaining slot."
+        }
         )
 
     applicant.slot = slot
