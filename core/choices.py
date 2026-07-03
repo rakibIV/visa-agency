@@ -7,7 +7,35 @@ class PaymentMethod(models.TextChoices):
     CHEQUE = "CHEQUE", "Cheque"
     ONLINE = "ONLINE", "Online Payment"
 
+class PaymentInstallmentType(models.TextChoices):
+    INITIAL = "INITIAL", "Initial Payment"
+    SECOND = "SECOND", "Second Installment"
+    THIRD = "THIRD", "Third Installment"
+
+class ReceiptType(models.TextChoices):
+    MONEY_RECEIPT = "MONEY_RECEIPT", "Money Receipt"
+    REFUND_RECEIPT = "REFUND_RECEIPT", "Refund Receipt"
+
+class AgreementType(models.TextChoices):
+    MAIN = "MAIN", "Main Agreement"
+    SECOND = "SECOND", "Second Agreement"
+    THIRD = "THIRD", "Third Agreement"
+    REFUND = "REFUND", "Refund Agreement"
+    OTHER = "OTHER", "Other Agreement"
+
+class AgreementLanguage(models.TextChoices):
+    ENGLISH = "en", "English"
+    ARABIC = "ar", "Arabic"
+    BANGLA = "bn", "Bangla"
+    ALL = "all", "All Languages"
+
+class ClauseVisibilityMode(models.TextChoices):
+    ALL = "ALL", "All Countries"
+    INCLUDE = "INCLUDE", "Only Selected Countries"
+    EXCLUDE = "EXCLUDE", "Except Selected Countries"
+
 class RefundStatus(models.TextChoices):
+    BANK_INFO_MISSING = "bank_info_missing", "Bank Info Missing"
     PENDING = "pending", "Pending"
     APPROVED = "approved", "Approved"
     PAID = "paid", "Paid"
@@ -30,11 +58,6 @@ class RefundBasis(models.TextChoices):
     AGREEMENT = "agreement", "Agreement Based"
     OTHER = "other", "Other"
 
-
-class InstallmentType(models.TextChoices):
-    FIRST = "FIRST", "First Installment"
-    SECOND = "SECOND", "Second Installment"
-    THIRD = "THIRD", "Third Installment"
 
 
 class Gender(models.TextChoices):

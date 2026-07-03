@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 from decimal import Decimal
 
 from applicant.utils import applicant_document_upload_path
@@ -22,6 +23,11 @@ from core.choices import (
     MaritalStatus,
     AddressType,
     PaymentMethod,
+    PaymentInstallmentType,
+    ReceiptType,
+    AgreementLanguage,
+    AgreementType,
+    ClauseVisibilityMode,
     DocumentType,
     RefundStatus,
     RefundType,
@@ -174,20 +180,47 @@ class AgreementTemplate(BaseModel):
         max_length=200,
     )
 
-    visa = models.ForeignKey(
-        "visa.Visa",
-        on_delete=models.SET_NULL,
-        related_name="agreement_templates",
-        null=True,
+    code = models.SlugField(
+        max_length=160,
+        unique=True,
         blank=True,
-        help_text="Leave blank for a generic agreement.",
+        help_text="Stable API/admin code for this agreement template.",
+    )
+
+    agreement_type = models.CharField(
+        max_length=20,
+        choices=AgreementType.choices,
+        default=AgreementType.MAIN,
+        db_index=True,
+    )
+
+    title_en = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    title_ar = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    title_bn = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    description = models.TextField(
+        blank=True,
     )
 
     body = models.TextField(
+        blank=True,
+        default="",
         help_text=(
-            "Supports placeholders like "
-            "{full_name}, {passport_number}, "
-            "{visa}, {job}, {country}."
+            "Legacy fallback body. Prefer structured clauses. Supports "
+            "dynamic placeholders such as "
+            "{full_name}, {passport_number}, {visa}, {job}, "
+            "{country}, {payment}, {staff}, and similar values."
         ),
     )
 
@@ -199,8 +232,14 @@ class AgreementTemplate(BaseModel):
         default=True,
     )
 
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Can be generated automatically for new applicants.",
+    )
+
     class Meta:
         ordering = [
+            "agreement_type",
             "-version",
             "title",
         ]
@@ -208,8 +247,131 @@ class AgreementTemplate(BaseModel):
         verbose_name = "Agreement Template"
         verbose_name_plural = "Agreement Templates"
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "agreement_type",
+                    "version",
+                ],
+                name="unique_agreement_type_version",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(
+                f"{self.agreement_type}-{self.title}-v{self.version}"
+            )
+
+        if not self.title_en:
+            self.title_en = self.title
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.title} (v{self.version})"
+
+
+class AgreementTemplateClause(BaseModel):
+    template = models.ForeignKey(
+        AgreementTemplate,
+        on_delete=models.CASCADE,
+        related_name="clauses",
+    )
+
+    clause_key = models.SlugField(
+        max_length=160,
+        blank=True,
+        help_text="Stable key such as refund-authorization.",
+    )
+
+    clause_number = models.PositiveIntegerField(
+        default=1,
+    )
+
+    title_en = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    title_ar = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    title_bn = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    body_en = models.TextField(
+        blank=True,
+    )
+
+    body_ar = models.TextField(
+        blank=True,
+    )
+
+    body_bn = models.TextField(
+        blank=True,
+    )
+
+    visibility_mode = models.CharField(
+        max_length=20,
+        choices=ClauseVisibilityMode.choices,
+        default=ClauseVisibilityMode.ALL,
+    )
+
+    countries = models.ManyToManyField(
+        "country.Country",
+        related_name="agreement_clauses",
+        blank=True,
+        help_text=(
+            "Used with visibility_mode. INCLUDE means only these countries; "
+            "EXCLUDE means hide for these countries."
+        ),
+    )
+
+    visibility_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Optional future rules for status, visa, payment, refund, etc.",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "template",
+            "clause_number",
+            "created_at",
+        ]
+
+        verbose_name = "Agreement Template Clause"
+        verbose_name_plural = "Agreement Template Clauses"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "template",
+                    "clause_number",
+                ],
+                name="unique_agreement_template_clause_number",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.clause_key:
+            self.clause_key = slugify(
+                self.title_en or self.title_bn or self.title_ar or self.clause_number
+            )
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.template.title} | Clause {self.clause_number}"
 
 
 # ==========================================================
@@ -313,6 +475,24 @@ class Applicant(SoftDeleteModel):
         blank=True,
     )
 
+    lawyer = models.ForeignKey(
+        "agency.Lawyer",
+        on_delete=models.SET_NULL,
+        related_name="applicants",
+        null=True,
+        blank=True,
+        help_text="Dedicated lawyer for this applicant's email communication.",
+    )
+
+    payment_plan_installments = models.PositiveSmallIntegerField(
+        default=2,
+        choices=(
+            (2, "Two Installments"),
+            (3, "Three Installments"),
+        ),
+        help_text="Total expected payment installments for this applicant.",
+    )
+
     tags = models.ManyToManyField(
         ApplicantTag,
         related_name="applicants",
@@ -394,6 +574,117 @@ class Applicant(SoftDeleteModel):
 
     def __str__(self):
         return f"{self.application_id} | {self.full_name}"
+
+
+class ApplicantAgreement(BaseModel):
+    applicant = models.ForeignKey(
+        Applicant,
+        on_delete=models.CASCADE,
+        related_name="agreements",
+    )
+
+    template = models.ForeignKey(
+        AgreementTemplate,
+        on_delete=models.SET_NULL,
+        related_name="applicant_agreements",
+        null=True,
+        blank=True,
+    )
+
+    agreement_type = models.CharField(
+        max_length=20,
+        choices=AgreementType.choices,
+        default=AgreementType.MAIN,
+        db_index=True,
+    )
+
+    language = models.CharField(
+        max_length=10,
+        choices=AgreementLanguage.choices,
+        default=AgreementLanguage.ALL,
+        help_text="Preferred display language; rendered content stores all languages.",
+    )
+
+    title = models.CharField(
+        max_length=255,
+    )
+
+    template_version = models.PositiveIntegerField(
+        default=1,
+    )
+
+    rendered_content = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Rendered multilingual structured agreement clauses.",
+    )
+
+    rendered_text = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Rendered plain text by language for quick preview.",
+    )
+
+    context_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    template_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="generated_applicant_agreements",
+        null=True,
+        blank=True,
+    )
+
+    generated_at = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    is_void = models.BooleanField(
+        default=False,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-generated_at",
+            "-created_at",
+        ]
+
+        verbose_name = "Applicant Agreement"
+        verbose_name_plural = "Applicant Agreements"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "applicant",
+                    "agreement_type",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "template",
+                    "is_active",
+                ],
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.applicant.application_id} | {self.title}"
 
 
 class ApplicantProfile(BaseModel):
@@ -576,6 +867,14 @@ class ApplicantPayment(BaseModel):
         help_text="Auto-generated payment sequence per applicant.",
     )
 
+    installment_type = models.CharField(
+        max_length=20,
+        choices=PaymentInstallmentType.choices,
+        default=PaymentInstallmentType.INITIAL,
+        db_index=True,
+        help_text="Identifies refund bucket and payment progress.",
+    )
+
     receipt_number = models.CharField(
         max_length=50,
         blank=True,
@@ -652,6 +951,462 @@ class ApplicantPayment(BaseModel):
             f"{self.applicant.full_name} "
             f"| Payment #{self.payment_number}"
         )
+
+
+class ApplicantMoneyReceipt(BaseModel):
+    applicant = models.ForeignKey(
+        Applicant,
+        on_delete=models.CASCADE,
+        related_name="money_receipts",
+    )
+
+    payment = models.ForeignKey(
+        ApplicantPayment,
+        on_delete=models.SET_NULL,
+        related_name="money_receipts",
+        null=True,
+        blank=True,
+    )
+
+    receipt_number = models.CharField(
+        max_length=60,
+        unique=True,
+        db_index=True,
+    )
+
+    receipt_type = models.CharField(
+        max_length=30,
+        choices=ReceiptType.choices,
+        default=ReceiptType.MONEY_RECEIPT,
+    )
+
+    payment_reference = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    installment_type = models.CharField(
+        max_length=20,
+        choices=PaymentInstallmentType.choices,
+    )
+
+    installment_label = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    payment_number = models.PositiveIntegerField()
+
+    payment_date = models.DateField()
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+    )
+
+    currency = models.CharField(
+        max_length=3,
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    exchange_rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+    )
+
+    euro_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    applicant_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    staff_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    visa_job_country_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    payment_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    summary_text = models.TextField(
+        blank=True,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="generated_money_receipts",
+        null=True,
+        blank=True,
+    )
+
+    generated_at = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    is_void = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-generated_at",
+            "-created_at",
+        ]
+
+        verbose_name = "Applicant Money Receipt"
+        verbose_name_plural = "Applicant Money Receipts"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "applicant",
+                    "receipt_number",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "payment",
+                    "is_active",
+                ],
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.receipt_number} | {self.applicant.full_name}"
+
+
+class ApplicantRefundBankDetail(BaseModel):
+    applicant = models.OneToOneField(
+        Applicant,
+        on_delete=models.CASCADE,
+        related_name="refund_bank_detail",
+    )
+
+    account_holder_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    bank_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    branch_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    district_name = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    account_number_or_iban = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    routing_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    mobile_number = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+
+    country = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Applicant Refund Bank Detail"
+        verbose_name_plural = "Applicant Refund Bank Details"
+
+    def __str__(self):
+        return f"Refund bank detail | {self.applicant.full_name}"
+
+
+class ApplicantRefund(BaseModel):
+    applicant = models.ForeignKey(
+        Applicant,
+        on_delete=models.CASCADE,
+        related_name="refunds",
+    )
+
+    refund_status = models.CharField(
+        max_length=30,
+        choices=RefundStatus.choices,
+        default=RefundStatus.PENDING,
+        db_index=True,
+    )
+
+    refund_type = models.CharField(
+        max_length=20,
+        choices=RefundType.choices,
+        default=RefundType.PARTIAL,
+    )
+
+    refund_basis = models.CharField(
+        max_length=20,
+        choices=RefundBasis.choices,
+        default=RefundBasis.PAYMENT,
+    )
+
+    refund_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("80.00"),
+    )
+
+    refundable_payment_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    refund_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    non_refundable_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    refund_reason = models.TextField(
+        blank=True,
+    )
+
+    refund_date = models.DateField(
+        default=timezone.localdate,
+    )
+
+    generated_from_rejection = models.BooleanField(
+        default=False,
+        db_index=True,
+    )
+
+    bank_detail_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    payment_summary_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    applicant_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="created_applicant_refunds",
+        null=True,
+        blank=True,
+    )
+
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="approved_applicant_refunds",
+        null=True,
+        blank=True,
+    )
+
+    paid_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-refund_date",
+            "-created_at",
+        ]
+
+        verbose_name = "Applicant Refund"
+        verbose_name_plural = "Applicant Refunds"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "applicant",
+                    "refund_status",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "applicant",
+                    "generated_from_rejection",
+                ],
+            ),
+        ]
+
+    def __str__(self):
+        return f"Refund | {self.applicant.full_name} | {self.refund_amount}"
+
+
+class ApplicantRefundReceipt(BaseModel):
+    applicant = models.ForeignKey(
+        Applicant,
+        on_delete=models.CASCADE,
+        related_name="refund_receipts",
+    )
+
+    refund = models.ForeignKey(
+        ApplicantRefund,
+        on_delete=models.CASCADE,
+        related_name="receipts",
+    )
+
+    receipt_number = models.CharField(
+        max_length=60,
+        unique=True,
+        db_index=True,
+    )
+
+    receipt_type = models.CharField(
+        max_length=30,
+        choices=ReceiptType.choices,
+        default=ReceiptType.REFUND_RECEIPT,
+    )
+
+    refund_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+    )
+
+    refundable_payment_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    refund_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    non_refundable_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    refund_reason = models.TextField(
+        blank=True,
+    )
+
+    refund_bank_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    applicant_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    payment_summary_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    summary_text = models.TextField(
+        blank=True,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="generated_refund_receipts",
+        null=True,
+        blank=True,
+    )
+
+    generated_at = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    is_void = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-generated_at",
+            "-created_at",
+        ]
+
+        verbose_name = "Applicant Refund Receipt"
+        verbose_name_plural = "Applicant Refund Receipts"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "applicant",
+                    "receipt_number",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "refund",
+                    "is_active",
+                ],
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.receipt_number} | {self.applicant.full_name}"
 
 
 class CurrencyRate(BaseModel):

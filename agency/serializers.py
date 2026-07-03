@@ -6,7 +6,7 @@ from .models import (
     Office,
     SocialLink,
     EmailTemplate,
-    EmailSender,
+    Lawyer,
 )
 
 
@@ -78,19 +78,20 @@ class EmailTemplateSerializer(serializers.ModelSerializer):
         ]
 
 
-class EmailSenderSerializer(serializers.ModelSerializer):
+class LawyerSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(
         source="country.name",
         read_only=True,
     )
 
     class Meta:
-        model = EmailSender
+        model = Lawyer
         fields = [
             "id",
             "name",
             "email",
             "env_key",
+            "phone",
             "country",
             "country_name",
             "is_default",

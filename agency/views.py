@@ -9,7 +9,7 @@ from .models import (
     Office,
     SocialLink,
     EmailTemplate,
-    EmailSender,
+    Lawyer,
 )
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -19,7 +19,7 @@ from .serializers import (
     OfficeSerializer,
     SocialLinkSerializer,
     EmailTemplateSerializer,
-    EmailSenderSerializer,
+    LawyerSerializer,
 )
 
 
@@ -155,8 +155,8 @@ class EmailTemplateViewSet(ModelViewSet):
     ]
 
 
-class EmailSenderViewSet(ModelViewSet):
-    serializer_class = EmailSenderSerializer
+class LawyerViewSet(ModelViewSet):
+    serializer_class = LawyerSerializer
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -170,7 +170,7 @@ class EmailSenderViewSet(ModelViewSet):
 
     def get_queryset(self):
         return (
-            EmailSender.objects.select_related(
+            Lawyer.objects.select_related(
                 "country",
             )
             .order_by(
@@ -183,6 +183,7 @@ class EmailSenderViewSet(ModelViewSet):
         "name",
         "email",
         "env_key",
+        "phone",
         "country__name",
     ]
 

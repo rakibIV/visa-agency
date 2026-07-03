@@ -1,19 +1,24 @@
 from rest_framework import serializers
 
 from agency.models import (
-    EmailSender,
+    Lawyer,
     EmailTemplate as AgencyEmailTemplate,
 )
 
 from .models import (
     AgreementTemplate,
+    AgreementTemplateClause,
     ApplicantAddress,
     ApplicantProfile,
     ApplicantTag,
     ApplicationStatus,
     ApplicantDocument,
+    ApplicantMoneyReceipt,
     ApplicantNote,
     ApplicantPayment,
+    ApplicantRefund,
+    ApplicantRefundBankDetail,
+    ApplicantRefundReceipt,
     ApplicantStatusHistory,
     CurrencyRate,
     Applicant,
@@ -24,6 +29,12 @@ from .services import (
     create_applicant_address,
     create_applicant,
     create_payment,
+    create_or_update_applicant_refund_bank_detail,
+    create_refund_for_rejected_applicant,
+    generate_money_receipt_for_payment,
+    generate_refund_receipt_for_applicant,
+    get_applicant_payment_summary,
+    calculate_refund_breakdown,
     update_applicant_address,
     update_applicant,
     update_document,
@@ -82,7 +93,6 @@ class AgreementTemplateSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "title",
-            "visa",
             "body",
             "version",
             "is_active",
@@ -91,6 +101,68 @@ class AgreementTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
         )
+
+
+class AgreementTemplateClauseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AgreementTemplateClause
+
+        fields = (
+            "id",
+            "template",
+            "clause_key",
+            "clause_number",
+            "title_en",
+            "title_ar",
+            "title_bn",
+            "body_en",
+            "body_ar",
+            "body_bn",
+            "visibility_mode",
+            "countries",
+            "visibility_rules",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "clause_key",
+            "created_at",
+            "updated_at",
+        )
+
+
+class MailTriggerSerializer(serializers.Serializer):
+
+    applicant_id = serializers.PrimaryKeyRelatedField(
+        queryset=Applicant.objects.filter(
+            is_deleted=False,
+        ),
+        write_only=True,
+    )
+
+    template_id = serializers.PrimaryKeyRelatedField(
+        queryset=AgencyEmailTemplate.objects.filter(
+            is_active=True,
+        ),
+        write_only=True,
+    )
+
+    sender_id = serializers.PrimaryKeyRelatedField(
+        queryset=Lawyer.objects.filter(
+            is_active=True,
+        ),
+        write_only=True,
+    )
+
+    def validate(self, attrs):
+        attrs["applicant"] = attrs.pop("applicant_id")
+        attrs["template"] = attrs.pop("template_id")
+        attrs["sender"] = attrs.pop("sender_id")
+        return attrs
 
 
 class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
@@ -103,7 +175,7 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
     )
 
     sender = serializers.PrimaryKeyRelatedField(
-        queryset=EmailSender.objects.filter(
+        queryset=Lawyer.objects.filter(
             is_active=True,
         ),
         required=False,
@@ -125,7 +197,7 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
 class ApplicantManualEmailSerializer(serializers.Serializer):
 
     sender = serializers.PrimaryKeyRelatedField(
-        queryset=EmailSender.objects.filter(
+        queryset=Lawyer.objects.filter(
             is_active=True,
         ),
     )
@@ -278,12 +350,15 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "currency_rate",
             "currency_rate_info",
             "payment_number",
+            "installment_type",
+            "receipt_number",
             "payment_date",
             "payment_method",
             "currency",
             "amount",
             "exchange_rate",
             "euro_amount",
+            "reference",
             "received_by",
             "received_by_name",
             "note",
@@ -324,6 +399,356 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
         return update_payment(
             payment=instance,
             **validated_data,
+        )
+
+
+class ApplicantMoneyReceiptSerializer(serializers.ModelSerializer):
+
+    applicant_name = serializers.CharField(
+        source="applicant.full_name",
+        read_only=True,
+    )
+
+    application_id = serializers.CharField(
+        source="applicant.application_id",
+        read_only=True,
+    )
+
+    generated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApplicantMoneyReceipt
+
+        fields = (
+            "id",
+            "applicant",
+            "application_id",
+            "applicant_name",
+            "payment",
+            "receipt_number",
+            "receipt_type",
+            "payment_reference",
+            "installment_type",
+            "installment_label",
+            "payment_number",
+            "payment_date",
+            "payment_method",
+            "currency",
+            "amount",
+            "exchange_rate",
+            "euro_amount",
+            "applicant_snapshot",
+            "staff_snapshot",
+            "visa_job_country_snapshot",
+            "payment_snapshot",
+            "summary_text",
+            "notes",
+            "generated_by",
+            "generated_by_name",
+            "generated_at",
+            "is_void",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = fields
+
+    def get_generated_by_name(self, obj):
+        if obj.generated_by:
+            return obj.generated_by.get_full_name()
+
+        return None
+
+
+class GenerateMoneyReceiptSerializer(serializers.Serializer):
+
+    payment = serializers.PrimaryKeyRelatedField(
+        queryset=ApplicantPayment.objects.all(),
+    )
+
+    force_new = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+    def validate_payment(self, payment):
+        applicant = self.context.get(
+            "applicant",
+        )
+
+        if applicant and payment.applicant_id != applicant.id:
+            raise serializers.ValidationError(
+                "Payment does not belong to this applicant."
+            )
+
+        return payment
+
+    def save(self, **kwargs):
+        user = self.context.get(
+            "user",
+        )
+
+        return generate_money_receipt_for_payment(
+            self.validated_data["payment"],
+            generated_by=user if getattr(user, "is_authenticated", False) else None,
+            force_new=self.validated_data.get(
+                "force_new",
+                False,
+            ),
+        )
+
+
+class ApplicantRefundBankDetailSerializer(serializers.ModelSerializer):
+
+    applicant_name = serializers.CharField(
+        source="applicant.full_name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ApplicantRefundBankDetail
+
+        fields = (
+            "id",
+            "applicant",
+            "applicant_name",
+            "account_holder_name",
+            "bank_name",
+            "branch_name",
+            "district_name",
+            "account_number_or_iban",
+            "routing_number",
+            "mobile_number",
+            "country",
+            "notes",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "applicant",
+            "applicant_name",
+            "created_at",
+            "updated_at",
+        )
+
+    def create(self, validated_data):
+        return create_or_update_applicant_refund_bank_detail(
+            **validated_data,
+        )
+
+    def update(self, instance, validated_data):
+        validated_data.pop(
+            "applicant",
+            None,
+        )
+
+        return create_or_update_applicant_refund_bank_detail(
+            applicant=instance.applicant,
+            **validated_data,
+        )
+
+
+class ApplicantRefundSerializer(serializers.ModelSerializer):
+
+    applicant_name = serializers.CharField(
+        source="applicant.full_name",
+        read_only=True,
+    )
+
+    application_id = serializers.CharField(
+        source="applicant.application_id",
+        read_only=True,
+    )
+
+    receipt_count = serializers.IntegerField(
+        source="receipts.count",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ApplicantRefund
+
+        fields = (
+            "id",
+            "applicant",
+            "application_id",
+            "applicant_name",
+            "refund_status",
+            "refund_type",
+            "refund_basis",
+            "refund_percentage",
+            "refundable_payment_total",
+            "refund_amount",
+            "non_refundable_amount",
+            "refund_reason",
+            "refund_date",
+            "generated_from_rejection",
+            "bank_detail_snapshot",
+            "payment_summary_snapshot",
+            "applicant_snapshot",
+            "notes",
+            "created_by",
+            "approved_by",
+            "paid_at",
+            "receipt_count",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = fields
+
+
+class ApplicantRefundSummarySerializer(serializers.Serializer):
+
+    payment_summary = serializers.SerializerMethodField()
+    refund_breakdown = serializers.SerializerMethodField()
+    latest_refund = serializers.SerializerMethodField()
+
+    def get_payment_summary(self, applicant):
+        return get_applicant_payment_summary(
+            applicant,
+        )
+
+    def get_refund_breakdown(self, applicant):
+        breakdown = calculate_refund_breakdown(
+            applicant,
+        )
+
+        return {
+            key: str(value)
+            for key, value in breakdown.items()
+        }
+
+    def get_latest_refund(self, applicant):
+        refund = applicant.refunds.order_by(
+            "-created_at",
+        ).first()
+
+        if not refund:
+            return None
+
+        return ApplicantRefundSerializer(
+            refund,
+        ).data
+
+
+class GenerateRefundSerializer(serializers.Serializer):
+
+    reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+
+    def save(self, **kwargs):
+        applicant = self.context["applicant"]
+        user = self.context.get(
+            "user",
+        )
+
+        return create_refund_for_rejected_applicant(
+            applicant,
+            created_by=user if getattr(user, "is_authenticated", False) else None,
+            reason=self.validated_data.get(
+                "reason",
+                "",
+            ),
+        )
+
+
+class ApplicantRefundReceiptSerializer(serializers.ModelSerializer):
+
+    applicant_name = serializers.CharField(
+        source="applicant.full_name",
+        read_only=True,
+    )
+
+    application_id = serializers.CharField(
+        source="applicant.application_id",
+        read_only=True,
+    )
+
+    generated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApplicantRefundReceipt
+
+        fields = (
+            "id",
+            "applicant",
+            "application_id",
+            "applicant_name",
+            "refund",
+            "receipt_number",
+            "receipt_type",
+            "refund_percentage",
+            "refundable_payment_total",
+            "refund_amount",
+            "non_refundable_amount",
+            "refund_reason",
+            "refund_bank_snapshot",
+            "applicant_snapshot",
+            "payment_summary_snapshot",
+            "summary_text",
+            "notes",
+            "generated_by",
+            "generated_by_name",
+            "generated_at",
+            "is_void",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = fields
+
+    def get_generated_by_name(self, obj):
+        if obj.generated_by:
+            return obj.generated_by.get_full_name()
+
+        return None
+
+
+class GenerateRefundReceiptSerializer(serializers.Serializer):
+
+    refund = serializers.PrimaryKeyRelatedField(
+        queryset=ApplicantRefund.objects.all(),
+    )
+
+    force_new = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+    def validate_refund(self, refund):
+        applicant = self.context.get(
+            "applicant",
+        )
+
+        if applicant and refund.applicant_id != applicant.id:
+            raise serializers.ValidationError(
+                "Refund does not belong to this applicant."
+            )
+
+        return refund
+
+    def save(self, **kwargs):
+        applicant = self.context["applicant"]
+        user = self.context.get(
+            "user",
+        )
+
+        return generate_refund_receipt_for_applicant(
+            applicant,
+            self.validated_data["refund"],
+            generated_by=user if getattr(user, "is_authenticated", False) else None,
+            force_new=self.validated_data.get(
+                "force_new",
+                False,
+            ),
         )
 
 
@@ -531,8 +956,10 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "visa_name",
             "status",
             "status_name",
+            "payment_plan_installments",
             "assigned_staff",
             "assigned_staff_name",
+            "lawyer",
             "created_at",
         )
 
@@ -618,6 +1045,25 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    money_receipts = ApplicantMoneyReceiptSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    refund_bank_detail = ApplicantRefundBankDetailSerializer(
+        read_only=True,
+    )
+
+    refunds = ApplicantRefundSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    refund_receipts = ApplicantRefundReceiptSerializer(
+        many=True,
+        read_only=True,
+    )
+
     documents = ApplicantDocumentSerializer(
         many=True,
         read_only=True,
@@ -665,6 +1111,7 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "place_of_birth",
             "current_country",
+            "payment_plan_installments",
             "visa",
             "visa_name",
             "status",
@@ -673,10 +1120,15 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "assigned_staff",
             "assigned_staff_name",
             "agreement",
+            "lawyer",
             "tags",
             "profile",
             "addresses",
             "payments",
+            "refund_bank_detail",
+            "money_receipts",
+            "refunds",
+            "refund_receipts",
             "documents",
             "notes",
             "status_history",

@@ -6,7 +6,7 @@ from .models import (
     AgencyService,
     SocialLink,
     EmailTemplate,
-    EmailSender,
+    Lawyer,
 )
 
 
@@ -153,12 +153,13 @@ class EmailTemplateAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(EmailSender)
-class EmailSenderAdmin(admin.ModelAdmin):
+@admin.register(Lawyer)
+class LawyerAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "email",
         "env_key",
+        "phone",
         "country",
         "is_default",
         "is_active",
@@ -175,6 +176,7 @@ class EmailSenderAdmin(admin.ModelAdmin):
         "name",
         "email",
         "env_key",
+        "phone",
     )
 
     readonly_fields = (

@@ -11,14 +11,28 @@ from .emailing import (
 )
 
 from .models import (
+    AgreementTemplate,
+    AgreementTemplateClause,
     Applicant,
     ApplicantAddress,
+    ApplicantAgreement,
     ApplicantProfile,
     CurrencyRate,
     ApplicantPayment,
+    ApplicantMoneyReceipt,
+    ApplicantRefund,
+    ApplicantRefundBankDetail,
+    ApplicantRefundReceipt,
     ApplicantStatusHistory,
+    ApplicationStatus,
     ApplicantDocument,
     ApplicantNote,
+)
+from core.choices import (
+    AgreementLanguage,
+    ClauseVisibilityMode,
+    PaymentInstallmentType,
+    RefundStatus,
 )
 from .utils import generate_application_id
 
@@ -27,7 +41,685 @@ from decimal import Decimal
 from django.utils import timezone
 from .utils import (
     generate_payment_number,
+    generate_receipt_number,
 )
+
+
+class SafeFormatDict(dict):
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
+REFUND_PERCENTAGE = Decimal("80.00")
+REFUND_MULTIPLIER = Decimal("0.80")
+
+
+def _display_user(user):
+    if not user:
+        return ""
+
+    full_name = user.get_full_name()
+    return full_name or getattr(user, "username", "") or str(user)
+
+
+def _staff_snapshot(staff):
+    if not staff:
+        return {}
+
+    return {
+        "id": str(staff.id),
+        "employee_id": staff.employee_id,
+        "name": _display_user(staff.user),
+        "designation": getattr(staff.designation, "name", ""),
+        "office": getattr(staff.office, "name", ""),
+        "phone": staff.phone,
+    }
+
+
+def build_applicant_snapshot(applicant):
+    profile = getattr(applicant, "profile", None)
+    date_of_birth = getattr(applicant, "date_of_birth", None)
+
+    if hasattr(date_of_birth, "isoformat"):
+        date_of_birth_value = date_of_birth.isoformat()
+    else:
+        date_of_birth_value = date_of_birth
+
+    return {
+        "id": str(applicant.id),
+        "application_id": applicant.application_id,
+        "full_name": applicant.full_name,
+        "passport_number": applicant.passport_number,
+        "nid_number": applicant.nid_number,
+        "date_of_birth": date_of_birth_value,
+        "current_country": applicant.current_country,
+        "status": getattr(applicant.status, "name", ""),
+        "phone": getattr(profile, "phone", ""),
+        "email": getattr(profile, "email", ""),
+    }
+
+
+def build_visa_job_country_snapshot(applicant):
+    return {
+        "visa": {
+            "id": str(applicant.visa_id),
+            "name": getattr(applicant.visa, "name", ""),
+        },
+        "job": {
+            "id": str(applicant.job_id),
+            "title": getattr(applicant.job, "title", ""),
+        },
+        "country": {
+            "id": str(getattr(applicant.visa, "country_id", "")),
+            "name": getattr(getattr(applicant.visa, "country", None), "name", ""),
+        },
+    }
+
+
+def build_payment_receipt_snapshot(payment):
+    return {
+        "id": str(payment.id),
+        "payment_number": payment.payment_number,
+        "receipt_number": payment.receipt_number,
+        "installment_type": payment.installment_type,
+        "installment_label": payment.get_installment_type_display(),
+        "payment_date": payment.payment_date.isoformat()
+        if payment.payment_date
+        else None,
+        "payment_method": payment.payment_method,
+        "payment_method_label": payment.get_payment_method_display(),
+        "currency": payment.currency,
+        "amount": str(payment.amount),
+        "exchange_rate": str(payment.exchange_rate),
+        "euro_amount": str(payment.euro_amount),
+        "reference": payment.reference,
+        "note": payment.note,
+    }
+
+
+def build_refund_bank_snapshot(bank_detail):
+    if not bank_detail:
+        return {
+            "is_missing": True,
+        }
+
+    return {
+        "is_missing": False,
+        "account_holder_name": bank_detail.account_holder_name,
+        "bank_name": bank_detail.bank_name,
+        "branch_name": bank_detail.branch_name,
+        "district_name": bank_detail.district_name,
+        "account_number_or_iban": bank_detail.account_number_or_iban,
+        "routing_number": bank_detail.routing_number,
+        "mobile_number": bank_detail.mobile_number,
+        "country": bank_detail.country,
+        "notes": bank_detail.notes,
+    }
+
+
+def build_payment_summary_snapshot(applicant):
+    payments = applicant.payments.order_by(
+        "payment_number",
+    )
+
+    items = [
+        {
+            "id": str(payment.id),
+            "payment_number": payment.payment_number,
+            "installment_type": payment.installment_type,
+            "installment_label": payment.get_installment_type_display(),
+            "payment_date": payment.payment_date.isoformat()
+            if payment.payment_date
+            else None,
+            "currency": payment.currency,
+            "amount": str(payment.amount),
+            "euro_amount": str(payment.euro_amount),
+            "payment_method": payment.payment_method,
+            "reference": payment.reference,
+        }
+        for payment in payments
+    ]
+
+    total_paid = sum(
+        (payment.euro_amount for payment in payments),
+        Decimal("0.00"),
+    )
+
+    refundable_total = sum(
+        (
+            payment.euro_amount
+            for payment in payments
+            if payment.installment_type
+            in [
+                PaymentInstallmentType.SECOND,
+                PaymentInstallmentType.THIRD,
+            ]
+        ),
+        Decimal("0.00"),
+    )
+
+    return {
+        "payment_plan_installments": applicant.payment_plan_installments,
+        "total_paid_euro": str(total_paid),
+        "refundable_payment_total_euro": str(refundable_total),
+        "payments": items,
+    }
+
+
+def build_refund_receipt_snapshot(refund):
+    return {
+        "id": str(refund.id),
+        "refund_status": refund.refund_status,
+        "refund_percentage": str(refund.refund_percentage),
+        "refundable_payment_total": str(refund.refundable_payment_total),
+        "refund_amount": str(refund.refund_amount),
+        "non_refundable_amount": str(refund.non_refundable_amount),
+        "refund_reason": refund.refund_reason,
+        "refund_date": refund.refund_date.isoformat()
+        if refund.refund_date
+        else None,
+        "generated_from_rejection": refund.generated_from_rejection,
+    }
+
+
+def build_money_receipt_summary(payment):
+    return (
+        f"Received {payment.amount} {payment.currency} "
+        f"({payment.euro_amount} EUR) from {payment.applicant.full_name} "
+        f"for {payment.get_installment_type_display()}."
+    )
+
+
+def build_refund_receipt_summary(refund):
+    return (
+        f"Refund amount {refund.refund_amount} EUR for "
+        f"{refund.applicant.full_name}; {refund.refund_percentage}% of "
+        f"{refund.refundable_payment_total} EUR refundable payments."
+    )
+
+
+def _get_company_snapshot():
+    from agency.models import CompanyInformation
+
+    company = CompanyInformation.objects.filter(
+        is_active=True,
+    ).first()
+
+    if not company:
+        return {}
+
+    return {
+        "id": str(company.id),
+        "company_name": company.company_name,
+        "phone": company.phone,
+        "address": company.address,
+    }
+
+
+def build_agreement_context(applicant):
+    payment_summary = build_payment_summary_snapshot(
+        applicant,
+    )
+    refund_breakdown = calculate_refund_breakdown(
+        applicant,
+    )
+    company = _get_company_snapshot()
+    assigned_staff = getattr(
+        getattr(applicant, "slot", None),
+        "staff",
+        None,
+    )
+    latest_refund = applicant.refunds.order_by(
+        "-created_at",
+    ).first()
+
+    context = {
+        "full_name": applicant.full_name,
+        "application_id": applicant.application_id,
+        "passport_number": applicant.passport_number,
+        "visa": getattr(applicant.visa, "name", ""),
+        "job": getattr(applicant.job, "title", ""),
+        "country": getattr(getattr(applicant.visa, "country", None), "name", ""),
+        "staff": _staff_snapshot(assigned_staff).get("name", ""),
+        "company_name": company.get("company_name", ""),
+        "company_phone": company.get("phone", ""),
+        "company_address": company.get("address", ""),
+        "refund_percentage": str(refund_breakdown["refund_percentage"]),
+        "refundable_payment_total": str(
+            refund_breakdown["refundable_payment_total"]
+        ),
+        "refund_amount": str(refund_breakdown["refund_amount"]),
+        "non_refundable_amount": str(
+            refund_breakdown["non_refundable_amount"]
+        ),
+        "first_installment": str(
+            next(
+                (
+                    payment.euro_amount
+                    for payment in applicant.payments.order_by("payment_number")
+                    if payment.installment_type == PaymentInstallmentType.INITIAL
+                ),
+                Decimal("0.00"),
+            )
+        ),
+        "payment_plan_installments": applicant.payment_plan_installments,
+        "total_paid_euro": payment_summary["total_paid_euro"],
+        "representative_name": _staff_snapshot(assigned_staff).get("name", ""),
+        "refund_reason": getattr(latest_refund, "refund_reason", ""),
+    }
+
+    return {
+        "flat": context,
+        "applicant": build_applicant_snapshot(
+            applicant,
+        ),
+        "visa_job_country": build_visa_job_country_snapshot(
+            applicant,
+        ),
+        "payment_summary": payment_summary,
+        "refund_breakdown": {
+            key: str(value)
+            for key, value in refund_breakdown.items()
+        },
+        "company": company,
+        "staff": _staff_snapshot(
+            assigned_staff,
+        ),
+    }
+
+
+def render_agreement_text(text, context):
+    return (text or "").format_map(
+        SafeFormatDict(
+            context.get(
+                "flat",
+                {},
+            )
+        )
+    )
+
+
+def is_clause_visible_for_applicant(clause, applicant):
+    if not clause.is_active:
+        return False
+
+    country_id = getattr(
+        applicant.visa,
+        "country_id",
+        None,
+    )
+
+    if clause.visibility_mode == ClauseVisibilityMode.ALL:
+        return True
+
+    country_ids = set(
+        clause.countries.values_list(
+            "id",
+            flat=True,
+        )
+    )
+
+    if clause.visibility_mode == ClauseVisibilityMode.INCLUDE:
+        return country_id in country_ids
+
+    if clause.visibility_mode == ClauseVisibilityMode.EXCLUDE:
+        return country_id not in country_ids
+
+    return True
+
+
+def _template_title_by_language(template, language):
+    if language == AgreementLanguage.ARABIC:
+        return template.title_ar or template.title_en or template.title
+
+    if language == AgreementLanguage.BANGLA:
+        return template.title_bn or template.title_en or template.title
+
+    return template.title_en or template.title
+
+
+def _clause_title_by_language(clause, language):
+    if language == AgreementLanguage.ARABIC:
+        return clause.title_ar or clause.title_en or clause.title_bn
+
+    if language == AgreementLanguage.BANGLA:
+        return clause.title_bn or clause.title_en or clause.title_ar
+
+    return clause.title_en or clause.title_bn or clause.title_ar
+
+
+def _clause_body_by_language(clause, language):
+    if language == AgreementLanguage.ARABIC:
+        return clause.body_ar or clause.body_en or clause.body_bn
+
+    if language == AgreementLanguage.BANGLA:
+        return clause.body_bn or clause.body_en or clause.body_ar
+
+    return clause.body_en or clause.body_bn or clause.body_ar
+
+
+def render_agreement_template_for_applicant(template, applicant):
+    context = build_agreement_context(
+        applicant,
+    )
+    clauses = [
+        clause
+        for clause in template.clauses.prefetch_related(
+            "countries",
+        ).order_by(
+            "clause_number",
+        )
+        if is_clause_visible_for_applicant(
+            clause,
+            applicant,
+        )
+    ]
+
+    if not clauses and template.body:
+        clauses = [
+            AgreementTemplateClause(
+                template=template,
+                clause_number=1,
+                title_en=template.title_en or template.title,
+                title_ar=template.title_ar,
+                title_bn=template.title_bn,
+                body_en=template.body,
+            )
+        ]
+
+    content = {}
+    text = {}
+
+    for language in [
+        AgreementLanguage.ENGLISH,
+        AgreementLanguage.ARABIC,
+        AgreementLanguage.BANGLA,
+    ]:
+        rendered_clauses = []
+
+        for clause in clauses:
+            rendered_clauses.append(
+                {
+                    "clause_number": clause.clause_number,
+                    "clause_key": clause.clause_key,
+                    "title": render_agreement_text(
+                        _clause_title_by_language(
+                            clause,
+                            language,
+                        ),
+                        context,
+                    ),
+                    "body": render_agreement_text(
+                        _clause_body_by_language(
+                            clause,
+                            language,
+                        ),
+                        context,
+                    ),
+                }
+            )
+
+        content[language] = {
+            "title": render_agreement_text(
+                _template_title_by_language(
+                    template,
+                    language,
+                ),
+                context,
+            ),
+            "clauses": rendered_clauses,
+        }
+        text[language] = "\n\n".join(
+            [
+                f"{item['clause_number']}. {item['title']}\n{item['body']}"
+                for item in rendered_clauses
+            ]
+        )
+
+    return {
+        "template": {
+            "id": str(template.id),
+            "title": template.title,
+            "code": template.code,
+            "agreement_type": template.agreement_type,
+            "version": template.version,
+        },
+        "context": context,
+        "rendered_content": content,
+        "rendered_text": text,
+    }
+
+
+@transaction.atomic
+def generate_applicant_agreement(
+    *,
+    applicant,
+    template,
+    language=AgreementLanguage.ALL,
+    generated_by=None,
+    notes="",
+    force_new=False,
+):
+    if not template.is_active:
+        raise ValidationError(
+            {
+                "template": "Agreement template is inactive."
+            }
+        )
+
+    if not force_new:
+        existing = ApplicantAgreement.objects.filter(
+            applicant=applicant,
+            template=template,
+            is_active=True,
+            is_void=False,
+        ).first()
+
+        if existing:
+            return existing
+
+    rendered = render_agreement_template_for_applicant(
+        template,
+        applicant,
+    )
+
+    agreement = ApplicantAgreement.objects.create(
+        applicant=applicant,
+        template=template,
+        agreement_type=template.agreement_type,
+        language=language,
+        title=rendered["rendered_content"][AgreementLanguage.ENGLISH]["title"],
+        template_version=template.version,
+        rendered_content=rendered["rendered_content"],
+        rendered_text=rendered["rendered_text"],
+        context_snapshot=rendered["context"],
+        template_snapshot=rendered["template"],
+        generated_by=generated_by,
+        notes=notes,
+    )
+
+    return agreement
+
+
+@transaction.atomic
+def regenerate_applicant_agreement(
+    *,
+    applicant_agreement,
+    generated_by=None,
+    notes="",
+):
+    if applicant_agreement.template is None:
+        raise ValidationError(
+            {
+                "template": "Original agreement template is no longer available."
+            }
+        )
+
+    applicant_agreement.is_active = False
+    applicant_agreement.is_void = True
+    applicant_agreement.save(
+        update_fields=[
+            "is_active",
+            "is_void",
+            "updated_at",
+        ],
+    )
+
+    return generate_applicant_agreement(
+        applicant=applicant_agreement.applicant,
+        template=applicant_agreement.template,
+        language=applicant_agreement.language,
+        generated_by=generated_by,
+        notes=notes or applicant_agreement.notes,
+        force_new=True,
+    )
+
+
+def preview_applicant_agreement(
+    *,
+    applicant,
+    template,
+):
+    return render_agreement_template_for_applicant(
+        template,
+        applicant,
+    )
+
+
+@transaction.atomic
+def generate_default_applicant_agreements(
+    *,
+    applicant,
+    generated_by=None,
+):
+    agreements = []
+
+    for template in AgreementTemplate.objects.filter(
+        is_active=True,
+        is_default=True,
+    ).order_by(
+        "agreement_type",
+        "-version",
+    ):
+        agreements.append(
+            generate_applicant_agreement(
+                applicant=applicant,
+                template=template,
+                generated_by=generated_by,
+            )
+        )
+
+    return agreements
+
+
+def _get_status_by_name_or_slug(name):
+    slug = name.lower().replace(" ", "-")
+
+    return (
+        ApplicationStatus.objects.filter(
+            slug=slug,
+            is_active=True,
+        ).first()
+        or ApplicationStatus.objects.filter(
+            name__iexact=name,
+            is_active=True,
+        ).first()
+    )
+
+
+def _is_rejected_status(status):
+    return (
+        getattr(status, "slug", "").lower() == "rejected"
+        or getattr(status, "name", "").lower() == "rejected"
+    )
+
+
+def get_applicant_payment_summary(applicant):
+    return build_payment_summary_snapshot(applicant)
+
+
+def get_refundable_payment_total(applicant):
+    return sum(
+        (
+            payment.euro_amount
+            for payment in applicant.payments.filter(
+                installment_type__in=[
+                    PaymentInstallmentType.SECOND,
+                    PaymentInstallmentType.THIRD,
+                ],
+            )
+        ),
+        Decimal("0.00"),
+    ).quantize(
+        Decimal("0.01")
+    )
+
+
+def calculate_refund_breakdown(applicant):
+    refundable_total = get_refundable_payment_total(
+        applicant,
+    )
+    refund_amount = (
+        refundable_total
+        * REFUND_MULTIPLIER
+    ).quantize(
+        Decimal("0.01")
+    )
+    non_refundable_amount = (
+        refundable_total
+        - refund_amount
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    return {
+        "refund_percentage": REFUND_PERCENTAGE,
+        "refundable_payment_total": refundable_total,
+        "refund_amount": refund_amount,
+        "non_refundable_amount": non_refundable_amount,
+    }
+
+
+def is_payment_confirmed(applicant):
+    required_installment = (
+        PaymentInstallmentType.THIRD
+        if applicant.payment_plan_installments == 3
+        else PaymentInstallmentType.SECOND
+    )
+
+    return applicant.payments.filter(
+        installment_type=required_installment,
+    ).exists()
+
+
+def _get_payment_trigger_status(applicant):
+    if is_payment_confirmed(applicant):
+        return _get_status_by_name_or_slug(
+            "Payment Confirmed",
+        )
+
+    if applicant.payments.filter(
+        installment_type=PaymentInstallmentType.INITIAL,
+    ).exists():
+        return _get_status_by_name_or_slug(
+            "First Payment Received",
+        )
+
+    return None
+
+
+def _sync_payment_status(applicant, changed_by=None):
+    status = _get_payment_trigger_status(applicant)
+
+    if status is None:
+        return
+
+    change_applicant_status(
+        applicant=applicant,
+        new_status=status,
+        changed_by=changed_by,
+        remarks="Status updated automatically from payment progress.",
+    )
 
 
 @transaction.atomic
@@ -50,6 +742,10 @@ def create_applicant(
     ApplicantProfile.objects.create(
         applicant=applicant,
         **(profile_data or {}),
+    )
+
+    generate_default_applicant_agreements(
+        applicant=applicant,
     )
 
     return applicant
@@ -137,10 +833,12 @@ def create_payment(
     payment_method,
     currency,
     amount,
+    installment_type=PaymentInstallmentType.INITIAL,
     received_by=None,
     receipt_number="",
     reference="",
     note="",
+    generated_by=None,
 ):
     """
     Creates a payment for an applicant.
@@ -179,6 +877,7 @@ def create_payment(
         applicant=applicant,
         currency_rate=currency_rate,
         payment_number=payment_number,
+        installment_type=installment_type,
         payment_date=payment_date,
         payment_method=payment_method,
         currency=currency,
@@ -189,6 +888,16 @@ def create_payment(
         reference=reference,
         received_by=received_by,
         note=note,
+    )
+
+    generate_money_receipt_for_payment(
+        payment,
+        generated_by=generated_by,
+    )
+
+    _sync_payment_status(
+        applicant,
+        changed_by=received_by,
     )
 
     return payment
@@ -236,7 +945,245 @@ def update_payment(
 
     payment.save()
 
+    _sync_payment_status(
+        payment.applicant,
+        changed_by=payment.received_by,
+    )
+
     return payment
+
+
+@transaction.atomic
+def generate_money_receipt_for_payment(
+    payment,
+    generated_by=None,
+    force_new=False,
+):
+    if not force_new:
+        existing = payment.money_receipts.filter(
+            is_active=True,
+            is_void=False,
+        ).first()
+
+        if existing:
+            return existing
+
+    applicant = payment.applicant
+    receipt_number = payment.receipt_number or generate_receipt_number(
+        "MR",
+    )
+
+    if ApplicantMoneyReceipt.objects.filter(
+        receipt_number=receipt_number,
+    ).exists():
+        receipt_number = generate_receipt_number(
+            "MR",
+        )
+
+    receipt = ApplicantMoneyReceipt.objects.create(
+        applicant=applicant,
+        payment=payment,
+        receipt_number=receipt_number,
+        payment_reference=payment.reference,
+        installment_type=payment.installment_type,
+        installment_label=payment.get_installment_type_display(),
+        payment_number=payment.payment_number,
+        payment_date=payment.payment_date,
+        payment_method=payment.payment_method,
+        currency=payment.currency,
+        amount=payment.amount,
+        exchange_rate=payment.exchange_rate,
+        euro_amount=payment.euro_amount,
+        applicant_snapshot=build_applicant_snapshot(
+            applicant,
+        ),
+        staff_snapshot=_staff_snapshot(
+            payment.received_by,
+        ),
+        visa_job_country_snapshot=build_visa_job_country_snapshot(
+            applicant,
+        ),
+        payment_snapshot=build_payment_receipt_snapshot(
+            payment,
+        ),
+        summary_text=build_money_receipt_summary(
+            payment,
+        ),
+        notes=payment.note,
+        generated_by=generated_by,
+    )
+
+    if not payment.receipt_number:
+        payment.receipt_number = receipt.receipt_number
+        payment.save(
+            update_fields=[
+                "receipt_number",
+                "updated_at",
+            ],
+        )
+
+    return receipt
+
+
+@transaction.atomic
+def create_or_update_applicant_refund_bank_detail(
+    *,
+    applicant,
+    **bank_data,
+):
+    bank_detail, _ = ApplicantRefundBankDetail.objects.update_or_create(
+        applicant=applicant,
+        defaults=bank_data,
+    )
+
+    return bank_detail
+
+
+@transaction.atomic
+def create_refund_for_rejected_applicant(
+    applicant,
+    created_by=None,
+    reason="",
+):
+    if not _is_rejected_status(applicant.status):
+        raise ValidationError(
+            {
+                "status": "Applicant must be rejected before refund generation."
+            }
+        )
+
+    existing = ApplicantRefund.objects.filter(
+        applicant=applicant,
+        generated_from_rejection=True,
+    ).exclude(
+        refund_status=RefundStatus.CANCELLED,
+    ).first()
+
+    if existing:
+        return existing
+
+    breakdown = calculate_refund_breakdown(
+        applicant,
+    )
+
+    if breakdown["refundable_payment_total"] <= Decimal("0.00"):
+        return None
+
+    bank_detail = getattr(
+        applicant,
+        "refund_bank_detail",
+        None,
+    )
+    bank_snapshot = build_refund_bank_snapshot(
+        bank_detail,
+    )
+
+    refund_status = (
+        RefundStatus.BANK_INFO_MISSING
+        if bank_snapshot.get("is_missing")
+        else RefundStatus.PENDING
+    )
+
+    refund = ApplicantRefund.objects.create(
+        applicant=applicant,
+        refund_status=refund_status,
+        refund_percentage=breakdown["refund_percentage"],
+        refundable_payment_total=breakdown["refundable_payment_total"],
+        refund_amount=breakdown["refund_amount"],
+        non_refundable_amount=breakdown["non_refundable_amount"],
+        refund_reason=reason,
+        generated_from_rejection=True,
+        bank_detail_snapshot=bank_snapshot,
+        payment_summary_snapshot=build_payment_summary_snapshot(
+            applicant,
+        ),
+        applicant_snapshot=build_applicant_snapshot(
+            applicant,
+        ),
+        created_by=created_by,
+    )
+
+    generate_refund_receipt_for_applicant(
+        applicant,
+        refund,
+        generated_by=created_by,
+    )
+
+    return refund
+
+
+@transaction.atomic
+def generate_refund_receipt_for_applicant(
+    applicant,
+    refund,
+    generated_by=None,
+    force_new=False,
+):
+    if refund.applicant_id != applicant.id:
+        raise ValidationError(
+            {
+                "refund": "Refund does not belong to this applicant."
+            }
+        )
+
+    if not force_new:
+        existing = refund.receipts.filter(
+            is_active=True,
+            is_void=False,
+        ).first()
+
+        if existing:
+            return existing
+
+    receipt = ApplicantRefundReceipt.objects.create(
+        applicant=applicant,
+        refund=refund,
+        receipt_number=generate_receipt_number(
+            "RR",
+        ),
+        refund_percentage=refund.refund_percentage,
+        refundable_payment_total=refund.refundable_payment_total,
+        refund_amount=refund.refund_amount,
+        non_refundable_amount=refund.non_refundable_amount,
+        refund_reason=refund.refund_reason,
+        refund_bank_snapshot=refund.bank_detail_snapshot,
+        applicant_snapshot=refund.applicant_snapshot,
+        payment_summary_snapshot=refund.payment_summary_snapshot,
+        summary_text=build_refund_receipt_summary(
+            refund,
+        ),
+        notes=refund.notes,
+        generated_by=generated_by,
+    )
+
+    return receipt
+
+
+@transaction.atomic
+def mark_refund_paid(
+    *,
+    refund,
+    approved_by=None,
+    notes="",
+):
+    refund.refund_status = RefundStatus.PAID
+    refund.approved_by = approved_by
+    refund.paid_at = timezone.now()
+
+    if notes:
+        refund.notes = notes
+
+    refund.save(
+        update_fields=[
+            "refund_status",
+            "approved_by",
+            "paid_at",
+            "notes",
+            "updated_at",
+        ],
+    )
+
+    return refund
 
 
 @transaction.atomic
@@ -312,6 +1259,14 @@ def change_applicant_status(
             staff_name=get_staff_display_name(
                 changed_by.user if changed_by else None
             ),
+        )
+
+    if _is_rejected_status(new_status):
+        create_refund_for_rejected_applicant(
+            applicant,
+            created_by=updated_by
+            or getattr(changed_by, "user", None),
+            reason=remarks,
         )
 
     return applicant

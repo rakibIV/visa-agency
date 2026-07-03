@@ -4,8 +4,11 @@ from .models import (
     AgreementTemplate,
     Applicant,
     ApplicantDocument,
+    ApplicantMoneyReceipt,
     ApplicantNote,
     ApplicantPayment,
+    ApplicantRefund,
+    ApplicantRefundReceipt,
     ApplicantTag,
     ApplicationStatus,
     CurrencyRate,
@@ -133,7 +136,50 @@ class ApplicantPaymentFilter(django_filters.FilterSet):
             "applicant": ["exact"],
             "payment_method": ["exact"],
             "currency": ["exact"],
+            "installment_type": ["exact"],
             "received_by": ["exact"],
+        }
+
+
+class ApplicantMoneyReceiptFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = ApplicantMoneyReceipt
+
+        fields = {
+            "applicant": ["exact"],
+            "payment": ["exact"],
+            "receipt_number": ["exact", "icontains"],
+            "installment_type": ["exact"],
+            "is_active": ["exact"],
+            "is_void": ["exact"],
+        }
+
+
+class ApplicantRefundFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = ApplicantRefund
+
+        fields = {
+            "applicant": ["exact"],
+            "refund_status": ["exact"],
+            "generated_from_rejection": ["exact"],
+            "refund_date": ["exact"],
+        }
+
+
+class ApplicantRefundReceiptFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = ApplicantRefundReceipt
+
+        fields = {
+            "applicant": ["exact"],
+            "refund": ["exact"],
+            "receipt_number": ["exact", "icontains"],
+            "is_active": ["exact"],
+            "is_void": ["exact"],
         }
 
 

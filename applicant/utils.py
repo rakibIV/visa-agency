@@ -57,6 +57,33 @@ def generate_payment_number(applicant):
     return last_payment.payment_number + 1
 
 
+def generate_receipt_number(prefix):
+    """
+    Generates compact receipt numbers.
+
+    Example:
+        MR-20260704-000001
+        RR-20260704-000001
+    """
+
+    from django.utils import timezone
+    from .models import ApplicantMoneyReceipt, ApplicantRefundReceipt
+
+    today = timezone.localdate()
+    date_part = today.strftime("%Y%m%d")
+
+    if prefix == "RR":
+        model = ApplicantRefundReceipt
+    else:
+        model = ApplicantMoneyReceipt
+
+    count = model.objects.filter(
+        receipt_number__startswith=f"{prefix}-{date_part}",
+    ).count()
+
+    return f"{prefix}-{date_part}-{count + 1:06d}"
+
+
 def applicant_photo_upload_path(
     instance,
     filename,

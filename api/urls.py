@@ -7,16 +7,21 @@ from agency.views import (
     AgencyServiceViewSet,
     CompanyInformationViewSet,
     EmailTemplateViewSet,
-    EmailSenderViewSet,
+    LawyerViewSet,
     OfficeViewSet,
     SocialLinkViewSet,
 )
 from applicant.views import (
+    AgreementTemplateClauseViewSet,
     AgreementTemplateViewSet,
     ApplicantAddressViewSet,
     ApplicantDocumentViewSet,
+    ApplicantMoneyReceiptViewSet,
     ApplicantNoteViewSet,
     ApplicantPaymentViewSet,
+    ApplicantRefundBankDetailViewSet,
+    ApplicantRefundReceiptViewSet,
+    ApplicantRefundViewSet,
     ApplicantStatusHistoryViewSet,
     ApplicantTagViewSet,
     ApplicantViewSet,
@@ -59,7 +64,7 @@ router.register("branches", OfficeViewSet, basename="office")
 router.register("social-links", SocialLinkViewSet, basename="social-link")
 router.register("agency-services", AgencyServiceViewSet, basename="agency-service")
 router.register("email-templates", EmailTemplateViewSet, basename="email-template")
-router.register("email-senders", EmailSenderViewSet, basename="email-sender")
+router.register("lawyers", LawyerViewSet, basename="lawyer")
 
 # Visa Core
 router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
@@ -105,9 +110,17 @@ staff_router.register("emergency-contacts", StaffEmergencyContactViewSet, basena
 applicant_router = NestedDefaultRouter(router, "applicants", lookup="applicant")
 applicant_router.register("addresses", ApplicantAddressViewSet, basename="applicant-address")
 applicant_router.register("payments", ApplicantPaymentViewSet, basename="applicant-payment")
+applicant_router.register("money-receipts", ApplicantMoneyReceiptViewSet, basename="applicant-money-receipt")
+applicant_router.register("refund-bank-detail", ApplicantRefundBankDetailViewSet, basename="applicant-refund-bank-detail")
+applicant_router.register("refunds", ApplicantRefundViewSet, basename="applicant-refund")
+applicant_router.register("refund-receipts", ApplicantRefundReceiptViewSet, basename="applicant-refund-receipt")
 applicant_router.register("documents", ApplicantDocumentViewSet, basename="applicant-document")
 applicant_router.register("notes", ApplicantNoteViewSet, basename="applicant-note")
 applicant_router.register("status-history", ApplicantStatusHistoryViewSet, basename="applicant-status-history")
+
+# Agreement Template Nesting
+agreement_template_router = NestedDefaultRouter(router, "agreement-templates", lookup="template")
+agreement_template_router.register("clauses", AgreementTemplateClauseViewSet, basename="agreement-template-clause")
 
 
 # ==========================================
@@ -129,4 +142,5 @@ urlpatterns = [
     path("", include(job_router.urls)),
     path("", include(staff_router.urls)),
     path("", include(applicant_router.urls)),
+    path("", include(agreement_template_router.urls)),
 ]

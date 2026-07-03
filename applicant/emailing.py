@@ -6,7 +6,7 @@ from django.core.mail import EmailMessage, get_connection
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
-from agency.models import EmailSender, EmailTemplate
+from agency.models import Lawyer, EmailTemplate
 
 
 EMAIL_PLACEHOLDER_PATTERN = re.compile(
@@ -145,10 +145,13 @@ def send_email_from_sender(
 def send_applicant_email(
     *,
     applicant,
-    sender,
+    sender=None,
     template,
     staff_name="",
 ):
+    if sender is None:
+        sender = getattr(applicant, "lawyer", None)
+
     recipient_email = getattr(
         getattr(applicant, "profile", None),
         "email",
@@ -159,6 +162,13 @@ def send_applicant_email(
         raise ValidationError(
             {
                 "applicant": "Applicant email address is missing."
+            }
+        )
+
+    if sender is None:
+        raise ValidationError(
+            {
+                "sender": "No lawyer sender is assigned to this applicant."
             }
         )
 

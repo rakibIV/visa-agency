@@ -4,9 +4,13 @@ from .models import (
     Applicant,
     ApplicantAddress,
     ApplicantDocument,
+    ApplicantMoneyReceipt,
     ApplicantNote,
     ApplicantPayment,
     ApplicantProfile,
+    ApplicantRefund,
+    ApplicantRefundBankDetail,
+    ApplicantRefundReceipt,
     ApplicantStatusHistory,
     ApplicationStatus,
     ApplicantTag,
@@ -51,9 +55,6 @@ def get_agreement_templates():
     return (
         AgreementTemplate.objects.filter(
             is_active=True,
-        )
-        .select_related(
-            "visa",
         )
         .order_by(
             "title",
@@ -147,6 +148,9 @@ def get_applicant_detail(pk):
             "tags",
             "addresses",
             "payments",
+            "money_receipts",
+            "refunds",
+            "refund_receipts",
             "documents",
             "notes",
             "status_history",
@@ -203,6 +207,63 @@ def get_payments(applicant):
         )
         .order_by(
             "payment_number",
+        )
+    )
+
+
+def get_money_receipts(applicant):
+    return (
+        ApplicantMoneyReceipt.objects.filter(
+            applicant=applicant,
+        )
+        .select_related(
+            "payment",
+            "generated_by",
+        )
+        .order_by(
+            "-generated_at",
+        )
+    )
+
+
+def get_refund_bank_detail(applicant):
+    return (
+        ApplicantRefundBankDetail.objects.filter(
+            applicant=applicant,
+        ).first()
+    )
+
+
+def get_refunds(applicant):
+    return (
+        ApplicantRefund.objects.filter(
+            applicant=applicant,
+        )
+        .select_related(
+            "created_by",
+            "approved_by",
+        )
+        .prefetch_related(
+            "receipts",
+        )
+        .order_by(
+            "-refund_date",
+            "-created_at",
+        )
+    )
+
+
+def get_refund_receipts(applicant):
+    return (
+        ApplicantRefundReceipt.objects.filter(
+            applicant=applicant,
+        )
+        .select_related(
+            "refund",
+            "generated_by",
+        )
+        .order_by(
+            "-generated_at",
         )
     )
 

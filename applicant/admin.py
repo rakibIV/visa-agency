@@ -95,23 +95,17 @@ class AgreementTemplateAdmin(admin.ModelAdmin):
 
     list_display = [
         "title",
-        "visa",
         "version",
         "is_active",
     ]
 
     list_filter = [
-        "visa",
         "is_active",
     ]
 
     search_fields = [
         "title",
         "body",
-    ]
-
-    autocomplete_fields = [
-        "visa",
     ]
 
     ordering = [
