@@ -7,6 +7,7 @@ from agency.views import (
     AgencyServiceViewSet,
     CompanyInformationViewSet,
     EmailTemplateViewSet,
+    EmailSenderViewSet,
     OfficeViewSet,
     SocialLinkViewSet,
 )
@@ -20,6 +21,7 @@ from applicant.views import (
     ApplicantTagViewSet,
     ApplicantViewSet,
     ApplicationStatusViewSet,
+    CurrencyRateViewSet,
 )
 from country.views import (
     CountryFAQViewSet,
@@ -57,6 +59,7 @@ router.register("branches", OfficeViewSet, basename="office")
 router.register("social-links", SocialLinkViewSet, basename="social-link")
 router.register("agency-services", AgencyServiceViewSet, basename="agency-service")
 router.register("email-templates", EmailTemplateViewSet, basename="email-template")
+router.register("email-senders", EmailSenderViewSet, basename="email-sender")
 
 # Visa Core
 router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
@@ -71,6 +74,7 @@ router.register("application-statuses", ApplicationStatusViewSet, basename="appl
 router.register("applicant-tags", ApplicantTagViewSet, basename="applicant-tag")
 router.register("agreement-templates", AgreementTemplateViewSet, basename="agreement-template")
 router.register("applicants", ApplicantViewSet, basename="applicant")
+router.register("currency-rates", CurrencyRateViewSet, basename="currency-rate")
 
 
 # ==========================================

@@ -9,6 +9,7 @@ from .models import (
     Office,
     SocialLink,
     EmailTemplate,
+    EmailSender,
 )
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -18,13 +19,12 @@ from .serializers import (
     OfficeSerializer,
     SocialLinkSerializer,
     EmailTemplateSerializer,
+    EmailSenderSerializer,
 )
 
 
 class AgencyServiceViewSet(ModelViewSet):
-    queryset = AgencyService.objects.filter(
-        is_active=True,
-    )
+    queryset = AgencyService.objects.all()
 
     serializer_class = AgencyServiceSerializer
 
@@ -57,9 +57,7 @@ class AgencyServiceViewSet(ModelViewSet):
 
 
 class CompanyInformationViewSet(ModelViewSet):
-    queryset = CompanyInformation.objects.filter(
-        is_active=True,
-    )
+    queryset = CompanyInformation.objects.all()
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -73,9 +71,7 @@ class CompanyInformationViewSet(ModelViewSet):
 
 
 class OfficeViewSet(ModelViewSet):
-    queryset = Office.objects.filter(
-        is_active=True,
-    )
+    queryset = Office.objects.all()
 
     serializer_class = OfficeSerializer
 
@@ -105,9 +101,7 @@ class OfficeViewSet(ModelViewSet):
 
 
 class SocialLinkViewSet(ModelViewSet):
-    queryset = SocialLink.objects.filter(
-        is_active=True,
-    )
+    queryset = SocialLink.objects.all()
 
     serializer_class = SocialLinkSerializer
 
@@ -121,26 +115,84 @@ class SocialLinkViewSet(ModelViewSet):
 
 
 class EmailTemplateViewSet(ModelViewSet):
-    queryset = EmailTemplate.objects.filter(
-        is_active=True,
-    )
-
     serializer_class = EmailTemplateSerializer
 
     permission_classes = [
         IsAdminOrReadOnly,
     ]
 
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    def get_queryset(self):
+        return (
+            EmailTemplate.objects.select_related(
+                "status",
+            )
+            .order_by(
+                "name",
+            )
+        )
+
     search_fields = [
         "name",
         "subject",
+        "body",
+        "status__name",
     ]
 
     ordering_fields = [
         "name",
+        "status",
         "created_at",
     ]
 
     ordering = [
+        "name",
+    ]
+
+
+class EmailSenderViewSet(ModelViewSet):
+    serializer_class = EmailSenderSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    def get_queryset(self):
+        return (
+            EmailSender.objects.select_related(
+                "country",
+            )
+            .order_by(
+                "-is_default",
+                "name",
+            )
+        )
+
+    search_fields = [
+        "name",
+        "email",
+        "env_key",
+        "country__name",
+    ]
+
+    ordering_fields = [
+        "name",
+        "is_default",
+        "created_at",
+    ]
+
+    ordering = [
+        "-is_default",
         "name",
     ]

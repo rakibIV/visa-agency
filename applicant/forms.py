@@ -10,13 +10,6 @@ from .models import (
     ApplicantProfile,
     ApplicantTag,
     ApplicationStatus,
-    ApplicantAddress,
-    ApplicantDocument,
-    ApplicantPayment,
-    AgreementTemplate,
-    ApplicantNote,
-    ApplicantTag,
-    ApplicationStatus,
 )
 from .services import (
     create_applicant,
@@ -155,7 +148,9 @@ class ApplicantPaymentForm(forms.ModelForm):
         model = ApplicantPayment
 
         exclude = [
+            "currency_rate",
             "payment_number",
+            "exchange_rate",
             "euro_amount",
             "created_at",
             "updated_at",
@@ -181,19 +176,6 @@ class ApplicantPaymentForm(forms.ModelForm):
             )
 
         return amount
-
-    def clean_exchange_rate(self):
-
-        rate = self.cleaned_data.get(
-            "exchange_rate"
-        )
-
-        if rate <= Decimal("0"):
-            raise forms.ValidationError(
-                "Exchange rate must be greater than zero."
-            )
-
-        return rate
 
     def save(self, commit=True):
 

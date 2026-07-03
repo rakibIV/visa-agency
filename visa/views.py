@@ -29,9 +29,7 @@ from .serializers import (
 
 
 class VisaCategoryViewSet(ModelViewSet):
-    queryset = VisaCategory.objects.filter(
-        is_active=True,
-    )
+    queryset = VisaCategory.objects.all()
 
     serializer_class = VisaCategorySerializer
 
@@ -62,10 +60,7 @@ class VisaCategoryViewSet(ModelViewSet):
 
 class VisaViewSet(ModelViewSet):
     queryset = (
-        Visa.objects.filter(
-            is_active=True,
-        )
-        .select_related(
+        Visa.objects.select_related(
             "country",
             "category",
         )
@@ -130,7 +125,6 @@ class VisaRequirementViewSet(ModelViewSet):
     def get_queryset(self):
         return VisaRequirement.objects.filter(
             visa_id=self.kwargs.get("visa_pk"),
-            is_active=True,
         ).order_by(
             "display_order",
             "title",
@@ -152,7 +146,6 @@ class VisaStepViewSet(ModelViewSet):
     def get_queryset(self):
         return VisaStep.objects.filter(
             visa_id=self.kwargs.get("visa_pk"),
-            is_active=True,
         ).order_by(
             "display_order",
         )
@@ -173,7 +166,6 @@ class VisaFAQViewSet(ModelViewSet):
     def get_queryset(self):
         return VisaFAQ.objects.filter(
             visa_id=self.kwargs.get("visa_pk"),
-            is_active=True,
         ).order_by(
             "display_order",
         )
@@ -236,7 +228,6 @@ class VisaJobViewSet(ModelViewSet):
     def get_queryset(self):
         return VisaJob.objects.filter(
             visa_id=self.kwargs.get("visa_pk"),
-            is_active=True,
         ).prefetch_related(
             "facilities",
         )
@@ -257,7 +248,6 @@ class JobFacilityViewSet(ModelViewSet):
     def get_queryset(self):
         return JobFacility.objects.filter(
             job_id=self.kwargs.get("job_pk"),
-            is_active=True,
         )
 
     def perform_create(self, serializer):

@@ -6,6 +6,7 @@ from .models import (
     AgencyService,
     SocialLink,
     EmailTemplate,
+    EmailSender,
 )
 
 
@@ -130,18 +131,50 @@ class SocialLinkAdmin(admin.ModelAdmin):
 class EmailTemplateAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "status",
         "subject",
         "is_active",
         "updated_at",
     )
 
     list_filter = (
+        "status",
         "is_active",
     )
 
     search_fields = (
         "name",
         "subject",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(EmailSender)
+class EmailSenderAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+        "env_key",
+        "country",
+        "is_default",
+        "is_active",
+        "updated_at",
+    )
+
+    list_filter = (
+        "country",
+        "is_default",
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+        "email",
+        "env_key",
     )
 
     readonly_fields = (

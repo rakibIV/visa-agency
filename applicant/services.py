@@ -1,24 +1,30 @@
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
-from .currency import get_exchange_rate
+from .currency import (
+    DEFAULT_TARGET_CURRENCY,
+    get_exchange_rate,
+)
+from .emailing import (
+    get_staff_display_name,
+    get_template_for_status,
+    send_applicant_email,
+)
 
 from .models import (
     Applicant,
     ApplicantAddress,
     ApplicantProfile,
+    CurrencyRate,
+    ApplicantPayment,
+    ApplicantStatusHistory,
+    ApplicantDocument,
+    ApplicantNote,
 )
 from .utils import generate_application_id
 
 from decimal import Decimal
 
 from django.utils import timezone
-
-from .models import (
-    ApplicantPayment,
-    ApplicantStatusHistory,
-    ApplicantDocument,
-    ApplicantNote,
-)
 from .utils import (
     generate_payment_number,
 )
@@ -148,10 +154,19 @@ def create_payment(
         applicant,
     )
 
+    currency = currency.upper()
+
     exchange_rate = get_exchange_rate(
         from_currency=currency,
-        to_currency="EUR",
+        to_currency=DEFAULT_TARGET_CURRENCY,
     )
+
+    currency_rate = CurrencyRate.objects.filter(
+        base_currency=currency.upper(),
+        target_currency=DEFAULT_TARGET_CURRENCY,
+    ).order_by(
+        "-fetched_at",
+    ).first()
 
     euro_amount = (
         Decimal(amount)
@@ -162,6 +177,7 @@ def create_payment(
 
     payment = ApplicantPayment.objects.create(
         applicant=applicant,
+        currency_rate=currency_rate,
         payment_number=payment_number,
         payment_date=payment_date,
         payment_method=payment_method,
@@ -195,9 +211,18 @@ def update_payment(
             value,
         )
 
+    payment.currency = payment.currency.upper()
+
+    currency_rate = CurrencyRate.objects.filter(
+        base_currency=payment.currency.upper(),
+        target_currency=DEFAULT_TARGET_CURRENCY,
+    ).order_by(
+        "-fetched_at",
+    ).first()
+
     payment.exchange_rate = get_exchange_rate(
         from_currency=payment.currency,
-        to_currency="EUR",
+        to_currency=DEFAULT_TARGET_CURRENCY,
     )
 
     payment.euro_amount = (
@@ -206,6 +231,8 @@ def update_payment(
     ).quantize(
         Decimal("0.01")
     )
+
+    payment.currency_rate = currency_rate
 
     payment.save()
 
@@ -219,6 +246,9 @@ def change_applicant_status(
     new_status,
     changed_by=None,
     remarks="",
+    updated_by=None,
+    sender=None,
+    send_email=False,
 ):
     """
     Changes applicant status and
@@ -232,11 +262,20 @@ def change_applicant_status(
 
     applicant.status = new_status
 
+    update_fields = [
+        "status",
+        "updated_at",
+    ]
+
+    if updated_by is not None:
+        applicant.updated_by = updated_by
+        update_fields.insert(
+            1,
+            "updated_by",
+        )
+
     applicant.save(
-        update_fields=[
-            "status",
-            "updated_at",
-        ],
+        update_fields=update_fields,
     )
 
     ApplicantStatusHistory.objects.create(
@@ -247,7 +286,53 @@ def change_applicant_status(
         remarks=remarks,
     )
 
+    if send_email:
+        if sender is None:
+            raise ValidationError(
+                {
+                    "sender": "Email sender is required when send_email is true."
+                }
+            )
+
+        template = get_template_for_status(new_status)
+
+        if template is None:
+            raise ValidationError(
+                {
+                    "status": (
+                        "No active email template is linked to this status."
+                    )
+                }
+            )
+
+        send_applicant_email(
+            applicant=applicant,
+            sender=sender,
+            template=template,
+            staff_name=get_staff_display_name(
+                changed_by.user if changed_by else None
+            ),
+        )
+
     return applicant
+
+
+@transaction.atomic
+def send_manual_applicant_email(
+    *,
+    applicant,
+    sender,
+    template,
+    sent_by=None,
+):
+    return send_applicant_email(
+        applicant=applicant,
+        sender=sender,
+        template=template,
+        staff_name=get_staff_display_name(
+            sent_by
+        ),
+    )
 
 
 @transaction.atomic

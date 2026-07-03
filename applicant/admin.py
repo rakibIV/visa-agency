@@ -24,6 +24,7 @@ from .models import (
     ApplicantStatusHistory,
     ApplicantTag,
     ApplicationStatus,
+    CurrencyRate,
 )
 
 
@@ -439,6 +440,7 @@ class ApplicantPaymentAdmin(admin.ModelAdmin):
         "payment_date",
         "payment_method",
         "currency",
+        "currency_rate",
         "amount",
         "euro_amount",
         "received_by",
@@ -461,13 +463,51 @@ class ApplicantPaymentAdmin(admin.ModelAdmin):
     ]
 
     readonly_fields = [
+        "currency_rate",
         "payment_number",
+        "exchange_rate",
         "euro_amount",
     ]
 
     ordering = [
         "-payment_date",
         "-payment_number",
+    ]
+
+
+@admin.register(CurrencyRate)
+class CurrencyRateAdmin(admin.ModelAdmin):
+
+    list_display = [
+        "base_currency",
+        "target_currency",
+        "rate",
+        "source",
+        "fetched_at",
+        "updated_at",
+    ]
+
+    list_filter = [
+        "base_currency",
+        "target_currency",
+        "source",
+        "fetched_at",
+    ]
+
+    search_fields = [
+        "base_currency",
+        "target_currency",
+        "source",
+    ]
+
+    readonly_fields = [
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = [
+        "-fetched_at",
+        "base_currency",
     ]
 
 

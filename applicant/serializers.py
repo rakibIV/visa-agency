@@ -1,5 +1,10 @@
 from rest_framework import serializers
 
+from agency.models import (
+    EmailSender,
+    EmailTemplate as AgencyEmailTemplate,
+)
+
 from .models import (
     AgreementTemplate,
     ApplicantAddress,
@@ -10,6 +15,7 @@ from .models import (
     ApplicantNote,
     ApplicantPayment,
     ApplicantStatusHistory,
+    CurrencyRate,
     Applicant,
 )
 
@@ -85,6 +91,73 @@ class AgreementTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
         )
+
+
+class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
+
+    new_status = serializers.PrimaryKeyRelatedField(
+        source="status",
+        queryset=ApplicationStatus.objects.filter(
+            is_active=True,
+        ),
+    )
+
+    sender = serializers.PrimaryKeyRelatedField(
+        queryset=EmailSender.objects.filter(
+            is_active=True,
+        ),
+        required=False,
+        allow_null=True,
+    )
+
+    send_email = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+    remarks = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+
+
+class ApplicantManualEmailSerializer(serializers.Serializer):
+
+    sender = serializers.PrimaryKeyRelatedField(
+        queryset=EmailSender.objects.filter(
+            is_active=True,
+        ),
+    )
+
+    template = serializers.PrimaryKeyRelatedField(
+        queryset=AgencyEmailTemplate.objects.filter(
+            is_active=True,
+        ),
+    )
+
+
+# =========================================================
+# Currency Rates
+# =========================================================
+
+class CurrencyRateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CurrencyRate
+
+        fields = (
+            "id",
+            "base_currency",
+            "target_currency",
+            "rate",
+            "source",
+            "fetched_at",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = fields
 
 
 # ==========================================================
@@ -189,6 +262,11 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
 
     received_by_name = serializers.SerializerMethodField()
 
+    currency_rate_info = CurrencyRateSerializer(
+        source="currency_rate",
+        read_only=True,
+    )
+
     class Meta:
         model = ApplicantPayment
 
@@ -197,6 +275,8 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "applicant",
             "application_id",
             "applicant_name",
+            "currency_rate",
+            "currency_rate_info",
             "payment_number",
             "payment_date",
             "payment_method",
@@ -213,7 +293,9 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
 
         read_only_fields = (
             "id",
+            "currency_rate",
             "payment_number",
+            "exchange_rate",
             "euro_amount",
             "created_at",
             "updated_at",

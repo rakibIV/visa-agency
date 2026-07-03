@@ -24,9 +24,7 @@ from .serializers import (
 
 
 class CountryViewSet(ModelViewSet):
-    queryset = Country.objects.filter(
-        is_active=True,
-    )
+    queryset = Country.objects.all()
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -69,7 +67,6 @@ class CountryViewSet(ModelViewSet):
         if self.action == "retrieve":
             return (
                 Country.objects
-                .filter(is_active=True)
                 .prefetch_related(
                     "requirements",
                     "faqs",
@@ -80,9 +77,7 @@ class CountryViewSet(ModelViewSet):
                 )
             )
 
-        return Country.objects.filter(
-            is_active=True,
-        )
+        return Country.objects.all()
     
 
 

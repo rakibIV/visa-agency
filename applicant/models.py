@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+from decimal import Decimal
 
 from applicant.utils import applicant_document_upload_path
 from core.models import (
@@ -21,6 +23,9 @@ from core.choices import (
     AddressType,
     PaymentMethod,
     DocumentType,
+    RefundStatus,
+    RefundType,
+    RefundBasis,
 )
 
 from .utils import (
@@ -551,6 +556,15 @@ class ApplicantAddress(BaseModel):
 
 
 class ApplicantPayment(BaseModel):
+    currency_rate = models.ForeignKey(
+        "CurrencyRate",
+        on_delete=models.SET_NULL,
+        related_name="payments",
+        null=True,
+        blank=True,
+        help_text="Stored exchange rate snapshot used for this payment.",
+    )
+
     applicant = models.ForeignKey(
         Applicant,
         on_delete=models.CASCADE,
@@ -638,7 +652,71 @@ class ApplicantPayment(BaseModel):
             f"{self.applicant.full_name} "
             f"| Payment #{self.payment_number}"
         )
+
+
+class CurrencyRate(BaseModel):
+    base_currency = models.CharField(
+        max_length=3,
+        db_index=True,
+        help_text="Source ISO currency code.",
+    )
+
+    target_currency = models.CharField(
+        max_length=3,
+        db_index=True,
+        default="EUR",
+        help_text="Target ISO currency code.",
+    )
+
+    rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        help_text="Exchange rate from base to target currency.",
+    )
+
+    source = models.CharField(
+        max_length=100,
+        default="CurrencyFreaks",
+    )
+
+    fetched_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True,
+    )
+
+    raw_response = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-fetched_at",
+            "base_currency",
+            "target_currency",
+        ]
+
+        verbose_name = "Currency Rate"
+        verbose_name_plural = "Currency Rates"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "base_currency",
+                    "target_currency",
+                ],
+                name="unique_currency_rate_pair",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.base_currency}/{self.target_currency} = "
+            f"{self.rate}"
+        )
     
+
+
 
 class ApplicantStatusHistory(BaseModel):
     applicant = models.ForeignKey(

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.utils.text import slugify
 
 from core.models import BaseModel
@@ -69,6 +70,15 @@ class EmailTemplate(BaseModel):
         unique=True,
     )
 
+    status = models.OneToOneField(
+        "applicant.ApplicationStatus",
+        on_delete=models.SET_NULL,
+        related_name="email_template",
+        null=True,
+        blank=True,
+        help_text="Used for automatic applicant status emails.",
+    )
+
     subject = models.CharField(
         max_length=255,
     )
@@ -104,6 +114,69 @@ Available Variables:
 
         verbose_name = "Email Template"
         verbose_name_plural = "Email Templates"
+
+    def __str__(self):
+        return self.name
+
+
+class EmailSender(BaseModel):
+    name = models.CharField(
+        max_length=150,
+        unique=True,
+    )
+
+    email = models.EmailField(
+        unique=True,
+    )
+
+    env_key = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Reads credentials from <ENV_KEY>_EMAIL and <ENV_KEY>_PASSWORD.",
+    )
+
+    country = models.ForeignKey(
+        "country.Country",
+        on_delete=models.SET_NULL,
+        related_name="email_senders",
+        null=True,
+        blank=True,
+    )
+
+    is_default = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-is_default",
+            "name",
+        ]
+
+        verbose_name = "Email Sender"
+        verbose_name_plural = "Email Senders"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "is_default",
+                ],
+                condition=Q(is_default=True),
+                name="unique_default_email_sender",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.env_key:
+            self.env_key = self.env_key.strip().upper().replace(" ", "_")
+        if self.email:
+            self.email = self.email.strip().lower()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

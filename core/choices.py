@@ -7,6 +7,29 @@ class PaymentMethod(models.TextChoices):
     CHEQUE = "CHEQUE", "Cheque"
     ONLINE = "ONLINE", "Online Payment"
 
+class RefundStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    PAID = "paid", "Paid"
+    CANCELLED = "cancelled", "Cancelled"
+
+class RefundReason(models.TextChoices):
+    REJECTION = "rejection", "Application Rejection"
+    CANCELLATION = "cancellation", "Applicant Cancellation"
+    AGREEMENT_REFUND = "agreement_refund", "Agreement Based Refund"
+    MANUAL = "manual", "Manual Refund"
+
+
+class RefundType(models.TextChoices):
+    PARTIAL = "partial", "Partial Refund"
+    FULL = "full", "Full Refund"
+
+
+class RefundBasis(models.TextChoices):
+    PAYMENT = "payment", "Payment Based"
+    AGREEMENT = "agreement", "Agreement Based"
+    OTHER = "other", "Other"
+
 
 class InstallmentType(models.TextChoices):
     FIRST = "FIRST", "First Installment"

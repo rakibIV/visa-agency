@@ -30,9 +30,7 @@ from .serializers import (
 
 
 class DesignationViewSet(ModelViewSet):
-    queryset = Designation.objects.filter(
-        is_active=True,
-    )
+    queryset = Designation.objects.all()
 
     serializer_class = DesignationSerializer
 
@@ -191,10 +189,7 @@ class StaffDocumentViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            StaffDocument.objects.filter(
-                is_active=True,
-            )
-            .select_related(
+            StaffDocument.objects.select_related(
                 "staff",
             )
             .order_by(

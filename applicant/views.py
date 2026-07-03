@@ -2,10 +2,13 @@
 # Create your views here.
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import Http404
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.filters import (
     OrderingFilter,
     SearchFilter,
 )
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from .filters import ApplicantFilter
 from .permissions import IsAdminOrReadOnly
@@ -18,6 +21,7 @@ from .filters import (
     ApplicantPaymentFilter,
     ApplicantDocumentFilter,
     ApplicantNoteFilter,
+    CurrencyRateFilter,
 )
 from .models import (
     AgreementTemplate,
@@ -34,6 +38,7 @@ from .selectors import (
     get_applicant_by_id,
     get_applicants,
     get_documents,
+    get_currency_rates,
     get_notes,
     get_payments,
     get_status_history,
@@ -51,6 +56,13 @@ from .serializers import (
     ApplicantDocumentSerializer,
     ApplicantNoteSerializer,
     ApplicantStatusHistorySerializer,
+    CurrencyRateSerializer,
+    ApplicantStatusEmailUpdateSerializer,
+    ApplicantManualEmailSerializer,
+)
+from .services import (
+    change_applicant_status,
+    send_manual_applicant_email,
 )
 
 
@@ -169,6 +181,48 @@ class AgreementTemplateViewSet(ModelViewSet):
 
 
 # ==========================================================
+# Currency Rates
+# ==========================================================
+
+class CurrencyRateViewSet(ModelViewSet):
+
+    queryset = get_currency_rates()
+
+    serializer_class = CurrencyRateSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    filterset_class = CurrencyRateFilter
+
+    search_fields = [
+        "base_currency",
+        "target_currency",
+        "source",
+    ]
+
+    ordering_fields = [
+        "base_currency",
+        "target_currency",
+        "rate",
+        "fetched_at",
+        "created_at",
+    ]
+
+    ordering = [
+        "-fetched_at",
+        "base_currency",
+    ]
+
+
+# ==========================================================
 # Applicant
 # ==========================================================
 
@@ -255,6 +309,89 @@ class ApplicantViewSet(ModelViewSet):
             updated_by=self.request.user
             if self.request.user.is_authenticated
             else None,
+        )
+
+    @action(
+        detail=True,
+        methods=[
+            "patch",
+        ],
+        url_path="change-status",
+    )
+    def change_status(self, request, pk=None):
+        applicant = get_applicant_detail(pk)
+
+        if applicant is None:
+            raise Http404
+
+        serializer = ApplicantStatusEmailUpdateSerializer(
+            data=request.data,
+        )
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        changed_by = getattr(
+            request.user,
+            "staff_profile",
+            None,
+        ) if request.user.is_authenticated else None
+
+        change_applicant_status(
+            applicant=applicant,
+            new_status=serializer.validated_data["status"],
+            changed_by=changed_by,
+            updated_by=request.user if request.user.is_authenticated else None,
+            remarks=serializer.validated_data.get(
+                "remarks",
+                "",
+            ),
+            sender=serializer.validated_data.get("sender"),
+            send_email=serializer.validated_data.get(
+                "send_email",
+                False,
+            ),
+        )
+
+        return Response(
+            ApplicantDetailSerializer(
+                get_applicant_detail(pk),
+            ).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=[
+            "post",
+        ],
+        url_path="send-email",
+    )
+    def send_email(self, request, pk=None):
+        applicant = get_applicant_detail(pk)
+
+        if applicant is None:
+            raise Http404
+
+        serializer = ApplicantManualEmailSerializer(
+            data=request.data,
+        )
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        send_manual_applicant_email(
+            applicant=applicant,
+            sender=serializer.validated_data["sender"],
+            template=serializer.validated_data["template"],
+            sent_by=request.user if request.user.is_authenticated else None,
+        )
+
+        return Response(
+            {
+                "detail": "Email sent successfully.",
+            },
+            status=status.HTTP_200_OK,
         )
 
 
