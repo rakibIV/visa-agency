@@ -1,32 +1,36 @@
+import secrets
+import string
+
+
+APPLICATION_ID_PREFIX = "ARG"
+APPLICATION_ID_RANDOM_LENGTH = 5
+APPLICATION_ID_LENGTH = len(APPLICATION_ID_PREFIX) + APPLICATION_ID_RANDOM_LENGTH
+APPLICATION_ID_ALPHABET = string.ascii_uppercase + string.digits
+
+
 def generate_application_id():
     """
-    Generates sequential application IDs.
+    Generates a unique public business application ID.
 
     Example:
-        APP-000001
-        APP-000002
-        APP-000003
+        ARGA72Q9
     """
 
     from .models import Applicant
 
-    last_applicant = (
-        Applicant.objects.order_by("-id")
-        .only("application_id")
-        .first()
-    )
-
-    if not last_applicant:
-        return "APP-000001"
-
-    number = int(
-        last_applicant.application_id.replace(
-            "APP-",
-            "",
+    for _ in range(100):
+        suffix = "".join(
+            secrets.choice(APPLICATION_ID_ALPHABET)
+            for _ in range(APPLICATION_ID_RANDOM_LENGTH)
         )
-    )
+        application_id = f"{APPLICATION_ID_PREFIX}{suffix}"
 
-    return f"APP-{number + 1:06d}"
+        if not Applicant.objects.filter(
+            application_id=application_id,
+        ).exists():
+            return application_id
+
+    raise RuntimeError("Unable to generate a unique application ID.")
 
 
 def generate_payment_number(applicant):

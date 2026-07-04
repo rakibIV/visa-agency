@@ -381,7 +381,7 @@ class AgreementTemplateClause(BaseModel):
 
 class Applicant(SoftDeleteModel):
     application_id = models.CharField(
-        max_length=20,
+        max_length=8,
         unique=True,
         editable=False,
         db_index=True,

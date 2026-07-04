@@ -2,13 +2,23 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 
+from api.public_views import (
+    PublicApplicantStatusCheckAPIView,
+    PublicCurrentMonthApplicantResultListAPIView,
+    PublicCurrentMonthStaffSlotListAPIView,
+    PublicStaffProfileAccessAPIView,
+)
+
 # Consolidated Imports by App
 from agency.views import (
     AgencyServiceViewSet,
     CompanyInformationViewSet,
+    ContactUsViewSet,
     EmailTemplateViewSet,
     LawyerViewSet,
+    NoticeViewSet,
     OfficeViewSet,
+    ReviewViewSet,
     SocialLinkViewSet,
 )
 from applicant.views import (
@@ -39,6 +49,7 @@ from staff.views import (
     StaffDocumentViewSet,
     StaffEmergencyContactViewSet,
     StaffMonthlySlotViewSet,
+    StaffPublicProfileViewSet,
     StaffViewSet,
 )
 from visa.views import (
@@ -65,6 +76,9 @@ router.register("social-links", SocialLinkViewSet, basename="social-link")
 router.register("agency-services", AgencyServiceViewSet, basename="agency-service")
 router.register("email-templates", EmailTemplateViewSet, basename="email-template")
 router.register("lawyers", LawyerViewSet, basename="lawyer")
+router.register("notices", NoticeViewSet, basename="notice")
+router.register("reviews", ReviewViewSet, basename="review")
+router.register("contact-us", ContactUsViewSet, basename="contact-us")
 
 # Visa Core
 router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
@@ -103,6 +117,7 @@ visa_router.register("seo", VisaSEOViewSet, basename="visa-seo")
 # Staff Nesting
 staff_router = NestedDefaultRouter(router, "staffs", lookup="staff")
 staff_router.register("monthly-slots", StaffMonthlySlotViewSet, basename="staff-monthly-slot")
+staff_router.register("public-profile", StaffPublicProfileViewSet, basename="staff-public-profile")
 staff_router.register("documents", StaffDocumentViewSet, basename="staff-document")
 staff_router.register("emergency-contacts", StaffEmergencyContactViewSet, basename="staff-emergency-contact")
 
@@ -136,6 +151,26 @@ job_router.register("facilities", JobFacilityViewSet, basename="job-facility")
 # 4. URLPATTERNS REGISTRATION
 # ==========================================
 urlpatterns = [
+    path(
+        "public/applicant-status/",
+        PublicApplicantStatusCheckAPIView.as_view(),
+        name="public-applicant-status",
+    ),
+    path(
+        "public/staff-slots/current-month/",
+        PublicCurrentMonthStaffSlotListAPIView.as_view(),
+        name="public-current-month-staff-slots",
+    ),
+    path(
+        "public/staff-profiles/<slug:slug>/access/",
+        PublicStaffProfileAccessAPIView.as_view(),
+        name="public-staff-profile-access",
+    ),
+    path(
+        "public/applicant-results/current-month/",
+        PublicCurrentMonthApplicantResultListAPIView.as_view(),
+        name="public-current-month-applicant-results",
+    ),
     path("", include(router.urls)),
     path("", include(country_router.urls)),
     path("", include(visa_router.urls)),

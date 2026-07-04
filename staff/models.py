@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
+from django.utils.text import slugify
 
 from agency.models import Office
 from core.choices import Gender
@@ -191,6 +193,94 @@ class StaffMonthlySlot(BaseModel):
             f"{self.staff.employee_id} | "
             f"{self.allocation_month.strftime('%B %Y')}"
         )
+
+
+def default_public_staff_fields():
+    return [
+        "employee_id",
+        "full_name",
+        "photo",
+        "designation",
+        "office",
+        "phone",
+        "whatsapp",
+    ]
+
+
+class StaffPublicProfile(BaseModel):
+    staff = models.OneToOneField(
+        Staff,
+        on_delete=models.CASCADE,
+        related_name="public_profile",
+    )
+
+    slug = models.SlugField(
+        max_length=180,
+        unique=True,
+        blank=True,
+        db_index=True,
+    )
+
+    public_password_hash = models.CharField(
+        max_length=128,
+        blank=True,
+    )
+
+    public_fields = models.JSONField(
+        default=default_public_staff_fields,
+        blank=True,
+        help_text="List of staff profile fields that can be returned publicly.",
+    )
+
+    is_public = models.BooleanField(
+        default=False,
+        db_index=True,
+    )
+
+    class Meta:
+        ordering = [
+            "staff__employee_id",
+        ]
+
+        verbose_name = "Staff Public Profile"
+        verbose_name_plural = "Staff Public Profiles"
+
+    def set_public_password(self, raw_password):
+        self.public_password_hash = make_password(raw_password)
+
+    def check_public_password(self, raw_password):
+        if not self.public_password_hash:
+            return False
+
+        return check_password(
+            raw_password,
+            self.public_password_hash,
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(
+                self.staff.user.get_full_name()
+                or self.staff.employee_id
+            )
+            base_slug = base_slug or self.staff.employee_id.lower()
+            slug = base_slug
+            counter = 2
+
+            while self.__class__.objects.filter(
+                slug=slug,
+            ).exclude(
+                pk=self.pk,
+            ).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Public profile | {self.staff.employee_id}"
 
 
 class StaffDocument(BaseModel):

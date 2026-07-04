@@ -2,24 +2,32 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.viewsets import ModelViewSet
 
+from core.permissions import IsAdminOrStaff
+
 from .filters import AgencyServiceFilter
 from .models import (
     AgencyService,
     CompanyInformation,
+    ContactUs,
     Office,
     SocialLink,
     EmailTemplate,
     Lawyer,
+    Notice,
+    Review,
 )
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     AgencyServiceSerializer,
     CompanyInformationSerializer,
     CompanyInformationDetailSerializer,
+    ContactUsSerializer,
     OfficeSerializer,
     SocialLinkSerializer,
     EmailTemplateSerializer,
     LawyerSerializer,
+    NoticeSerializer,
+    ReviewSerializer,
 )
 
 
@@ -53,6 +61,97 @@ class AgencyServiceViewSet(ModelViewSet):
     ordering = [
         "display_order",
         "title",
+    ]
+
+
+class NoticeViewSet(ModelViewSet):
+    queryset = Notice.objects.all()
+
+    serializer_class = NoticeSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        "title",
+        "content",
+    ]
+
+    ordering_fields = [
+        "title",
+        "is_pinned",
+        "created_at",
+    ]
+
+    ordering = [
+        "-is_pinned",
+        "-created_at",
+    ]
+
+
+class ReviewViewSet(ModelViewSet):
+    queryset = Review.objects.all()
+
+    serializer_class = ReviewSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        "name",
+        "comment",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "rating",
+    ]
+
+    ordering = [
+        "-created_at",
+    ]
+
+
+class ContactUsViewSet(ModelViewSet):
+    queryset = ContactUs.objects.all()
+
+    serializer_class = ContactUsSerializer
+
+    permission_classes = [
+        IsAdminOrStaff,
+    ]
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        "name",
+        "email",
+        "subject",
+        "message",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "is_read",
+    ]
+
+    ordering = [
+        "-created_at",
     ]
 
 
@@ -118,7 +217,7 @@ class EmailTemplateViewSet(ModelViewSet):
     serializer_class = EmailTemplateSerializer
 
     permission_classes = [
-        IsAdminOrReadOnly,
+        IsAdminOrStaff,
     ]
 
     filter_backends = [
@@ -159,7 +258,7 @@ class LawyerViewSet(ModelViewSet):
     serializer_class = LawyerSerializer
 
     permission_classes = [
-        IsAdminOrReadOnly,
+        IsAdminOrStaff,
     ]
 
     filter_backends = [

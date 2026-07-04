@@ -9,6 +9,7 @@ from .models import (
     Designation,
     Staff,
     StaffMonthlySlot,
+    StaffPublicProfile,
     StaffDocument,
     StaffEmergencyContact,
 )
@@ -38,6 +39,99 @@ class StaffMonthlySlotSerializer(serializers.ModelSerializer):
             "total_slot",
             "remaining_slot",
         ]
+
+
+class StaffPublicProfileSerializer(serializers.ModelSerializer):
+    staff = serializers.PrimaryKeyRelatedField(
+        queryset=Staff.objects.all(),
+        required=False,
+    )
+
+    public_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        style={
+            "input_type": "password",
+        },
+    )
+
+    employee_id = serializers.CharField(
+        source="staff.employee_id",
+        read_only=True,
+    )
+
+    full_name = serializers.CharField(
+        source="staff.user.get_full_name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = StaffPublicProfile
+        fields = [
+            "id",
+            "staff",
+            "employee_id",
+            "full_name",
+            "slug",
+            "public_fields",
+            "is_public",
+            "public_password",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "employee_id",
+            "full_name",
+            "created_at",
+            "updated_at",
+        ]
+
+    def create(self, validated_data):
+        public_password = validated_data.pop(
+            "public_password",
+            "",
+        )
+        instance = super().create(
+            validated_data,
+        )
+
+        if public_password:
+            instance.set_public_password(
+                public_password,
+            )
+            instance.save(
+                update_fields=[
+                    "public_password_hash",
+                    "updated_at",
+                ],
+            )
+
+        return instance
+
+    def update(self, instance, validated_data):
+        public_password = validated_data.pop(
+            "public_password",
+            "",
+        )
+        instance = super().update(
+            instance,
+            validated_data,
+        )
+
+        if public_password:
+            instance.set_public_password(
+                public_password,
+            )
+            instance.save(
+                update_fields=[
+                    "public_password_hash",
+                    "updated_at",
+                ],
+            )
+
+        return instance
 
 
 class StaffDocumentSerializer(serializers.ModelSerializer):

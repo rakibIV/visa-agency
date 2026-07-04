@@ -64,6 +64,117 @@ class AgencyService(BaseModel):
         return self.title
 
 
+class Notice(BaseModel):
+    title = models.CharField(
+        max_length=200,
+        unique=True,
+        db_index=True,
+    )
+
+    slug = models.SlugField(
+        max_length=220,
+        unique=True,
+        blank=True,
+    )
+
+    content = models.TextField(
+        blank=True,
+    )
+
+    is_pinned = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-is_pinned",
+            "-created_at",
+            "title",
+        ]
+
+        verbose_name = "Notice"
+        verbose_name_plural = "Notices"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class Review(BaseModel):
+    name = models.CharField(
+        max_length=150,
+    )
+
+    comment = models.TextField()
+
+    rating = models.PositiveSmallIntegerField(
+        default=5,
+        help_text="Rating from 1 to 5.",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at",
+        ]
+
+        verbose_name = "Review"
+        verbose_name_plural = "Reviews"
+
+    def __str__(self):
+        return f"{self.name} - {self.rating}/5"
+
+
+class ContactUs(BaseModel):
+    name = models.CharField(
+        max_length=150,
+    )
+
+    email = models.EmailField()
+
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+
+    subject = models.CharField(
+        max_length=255,
+    )
+
+    message = models.TextField()
+
+    is_read = models.BooleanField(
+        default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at",
+        ]
+
+        verbose_name = "Contact Us"
+        verbose_name_plural = "Contact Us"
+
+    def __str__(self):
+        return f"{self.name} - {self.subject}"
+
+
 class Lawyer(BaseModel):
     name = models.CharField(
         max_length=150,

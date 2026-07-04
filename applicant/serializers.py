@@ -943,6 +943,8 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 
     assigned_staff_name = serializers.SerializerMethodField()
 
+    assigned_staff = serializers.SerializerMethodField()
+
     class Meta:
         model = Applicant
 
@@ -970,9 +972,26 @@ class ApplicantListSerializer(serializers.ModelSerializer):
         )
 
     def get_assigned_staff_name(self, obj):
+        staff = getattr(
+            getattr(obj, "slot", None),
+            "staff",
+            None,
+        )
 
-        if obj.assigned_staff:
-            return obj.assigned_staff.user.get_full_name()
+        if staff:
+            return staff.user.get_full_name()
+
+        return None
+
+    def get_assigned_staff(self, obj):
+        staff = getattr(
+            getattr(obj, "slot", None),
+            "staff",
+            None,
+        )
+
+        if staff:
+            return str(staff.id)
 
         return None
 
@@ -1096,6 +1115,8 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
 
     assigned_staff_name = serializers.SerializerMethodField()
 
+    assigned_staff = serializers.SerializerMethodField()
+
     class Meta:
         model = Applicant
 
@@ -1139,8 +1160,25 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_assigned_staff_name(self, obj):
+        staff = getattr(
+            getattr(obj, "slot", None),
+            "staff",
+            None,
+        )
 
-        if obj.assigned_staff:
-            return obj.assigned_staff.user.get_full_name()
+        if staff:
+            return staff.user.get_full_name()
+
+        return None
+
+    def get_assigned_staff(self, obj):
+        staff = getattr(
+            getattr(obj, "slot", None),
+            "staff",
+            None,
+        )
+
+        if staff:
+            return str(staff.id)
 
         return None

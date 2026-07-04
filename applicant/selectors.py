@@ -1,4 +1,5 @@
-from django.db.models import Count, Prefetch, Q, Sum
+from django.db.models import Count, Max, Prefetch, Q, Sum
+from django.utils import timezone
 
 from .models import (
     Applicant,
@@ -113,9 +114,87 @@ def get_applicant_by_application_id(application_id):
     return (
         get_applicants()
         .filter(
-            application_id=application_id,
+            application_id=application_id.upper(),
         )
         .first()
+    )
+
+
+def get_public_applicant_status(
+    *,
+    application_id,
+    email,
+    phone,
+):
+    return (
+        Applicant.objects.filter(
+            is_deleted=False,
+            application_id=application_id.upper(),
+            profile__email__iexact=email.strip(),
+            profile__phone=phone.strip(),
+        )
+        .select_related(
+            "visa",
+            "visa__country",
+            "job",
+            "status",
+            "profile",
+            "slot",
+            "slot__staff",
+            "slot__staff__user",
+            "slot__staff__designation",
+        )
+        .prefetch_related(
+            "status_history__new_status",
+        )
+        .first()
+    )
+
+
+def get_public_current_month_applicant_results():
+    today = timezone.localdate()
+    month_start = today.replace(
+        day=1,
+    )
+
+    return (
+        Applicant.objects.filter(
+            is_deleted=False,
+            status__slug__in=[
+                "approved",
+                "rejected",
+            ],
+            status_history__new_status__slug__in=[
+                "approved",
+                "rejected",
+            ],
+            status_history__created_at__date__gte=month_start,
+            status_history__created_at__date__lte=today,
+        )
+        .select_related(
+            "visa",
+            "visa__country",
+            "job",
+            "status",
+        )
+        .annotate(
+            result_date=Max(
+                "status_history__created_at",
+                filter=Q(
+                    status_history__new_status__slug__in=[
+                        "approved",
+                        "rejected",
+                    ],
+                    status_history__created_at__date__gte=month_start,
+                    status_history__created_at__date__lte=today,
+                ),
+            )
+        )
+        .order_by(
+            "-result_date",
+            "application_id",
+        )
+        .distinct()
     )
 
 

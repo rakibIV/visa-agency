@@ -596,7 +596,6 @@ def generate_default_applicant_agreements(
 
     for template in AgreementTemplate.objects.filter(
         is_active=True,
-        is_default=True,
     ).order_by(
         "agreement_type",
         "-version",
@@ -1318,12 +1317,9 @@ def assign_slot(
 
     applicant.slot = slot
 
-    applicant.assigned_staff = slot.staff
-
     applicant.save(
         update_fields=[
             "slot",
-            "assigned_staff",
             "updated_at",
         ],
     )
@@ -1341,12 +1337,10 @@ def remove_slot(
     """
 
     applicant.slot = None
-    applicant.assigned_staff = None
 
     applicant.save(
         update_fields=[
             "slot",
-            "assigned_staff",
             "updated_at",
         ],
     )

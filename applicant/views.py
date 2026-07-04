@@ -479,11 +479,8 @@ class ApplicantViewSet(ModelViewSet):
                 "remarks",
                 "",
             ),
-            sender=validated_data.get("sender"),
-            send_email=validated_data.get(
-                "send_email",
-                False,
-            ),
+            sender=validated_data.get("sender") or applicant.lawyer,
+            send_email=True,
         )
 
         return Response(

@@ -3,10 +3,13 @@ from rest_framework import serializers
 from .models import (
     AgencyService,
     CompanyInformation,
+    ContactUs,
     Office,
     SocialLink,
     EmailTemplate,
     Lawyer,
+    Notice,
+    Review,
 )
 
 
@@ -21,6 +24,56 @@ class AgencyServiceSerializer(serializers.ModelSerializer):
             "icon",
             "is_featured",
             "display_order",
+        ]
+
+
+class NoticeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notice
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "content",
+            "is_pinned",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = [
+            "id",
+            "name",
+            "comment",
+            "rating",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class ContactUsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactUs
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone",
+            "subject",
+            "message",
+            "is_read",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "is_read",
+            "is_active",
         ]
 
 

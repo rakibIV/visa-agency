@@ -7,6 +7,9 @@ from .models import (
     SocialLink,
     EmailTemplate,
     Lawyer,
+    Notice,
+    ContactUs,
+    Review,
 )
 
 
@@ -145,6 +148,85 @@ class EmailTemplateAdmin(admin.ModelAdmin):
     search_fields = (
         "name",
         "subject",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(Notice)
+class NoticeAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "is_pinned",
+        "is_active",
+        "updated_at",
+    )
+
+    list_filter = (
+        "is_pinned",
+        "is_active",
+    )
+
+    search_fields = (
+        "title",
+        "content",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "rating",
+        "is_active",
+        "updated_at",
+    )
+
+    list_filter = (
+        "is_active",
+        "rating",
+    )
+
+    search_fields = (
+        "name",
+        "comment",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(ContactUs)
+class ContactUsAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+        "subject",
+        "is_read",
+        "is_active",
+        "created_at",
+    )
+
+    list_filter = (
+        "is_read",
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+        "email",
+        "subject",
+        "message",
     )
 
     readonly_fields = (
