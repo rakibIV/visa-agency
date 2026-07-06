@@ -216,6 +216,7 @@ class PublicStaffProfileAccessSerializer(serializers.Serializer):
 class PublicStaffProfileSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
     slot_summary = serializers.SerializerMethodField()
+    sub_staffs = serializers.SerializerMethodField()
 
     class Meta:
         model = StaffPublicProfile
@@ -223,6 +224,7 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             "slug",
             "slot_summary",
             "profile",
+            "sub_staffs",
         ]
 
     def get_slot_summary(self, obj):
@@ -263,6 +265,17 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             "lifetime_total_slot": lifetime["total_slot"] or 0,
             "lifetime_used_slot": lifetime["used_slot"] or 0,
         }
+
+    def get_sub_staffs(self, obj):
+        sub_staffs = obj.staff.sub_staffs.filter(is_active=True)
+        return [
+            {
+                "id": str(sub.id),
+                "name": sub.name,
+                "phone": sub.phone,
+            }
+            for sub in sub_staffs
+        ]
 
     def get_profile(self, obj):
         staff = obj.staff

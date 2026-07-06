@@ -691,34 +691,48 @@ def is_payment_confirmed(applicant):
     ).exists()
 
 
-def _get_payment_trigger_status(applicant):
-    if is_payment_confirmed(applicant):
-        return _get_status_by_name_or_slug(
-            "Payment Confirmed",
-        )
-
-    if applicant.payments.filter(
-        installment_type=PaymentInstallmentType.INITIAL,
-    ).exists():
-        return _get_status_by_name_or_slug(
-            "First Payment Received",
-        )
-
-    return None
-
-
 def _sync_payment_status(applicant, changed_by=None):
-    status = _get_payment_trigger_status(applicant)
-
-    if status is None:
+    if is_payment_confirmed(applicant):
+        status = _get_status_by_name_or_slug("Payment Confirmed")
+        if status and applicant.status != status:
+            change_applicant_status(
+                applicant=applicant,
+                new_status=status,
+                changed_by=changed_by,
+                remarks="Status updated automatically from payment progress.",
+            )
+            
+        # Generate default agreements once payment is confirmed
+        from applicant.services import generate_default_applicant_agreements
+        generate_default_applicant_agreements(applicant=applicant)
+        
         return
 
-    change_applicant_status(
-        applicant=applicant,
-        new_status=status,
-        changed_by=changed_by,
-        remarks="Status updated automatically from payment progress.",
-    )
+    if applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
+        first_payment_status = _get_status_by_name_or_slug("First Payment Received")
+        profile_created_status = _get_status_by_name_or_slug("Profile Created")
+        
+        # Transition to First Payment Received
+        if first_payment_status and applicant.status != first_payment_status and applicant.status != profile_created_status:
+            change_applicant_status(
+                applicant=applicant,
+                new_status=first_payment_status,
+                changed_by=changed_by,
+                remarks="First payment received.",
+                send_email=bool(applicant.lawyer),
+                sender=applicant.lawyer,
+            )
+            
+        # Immediately transition to Profile Created
+        if profile_created_status and applicant.status != profile_created_status:
+            change_applicant_status(
+                applicant=applicant,
+                new_status=profile_created_status,
+                changed_by=changed_by,
+                remarks="Profile automatically activated after first payment.",
+                send_email=bool(applicant.lawyer),
+                sender=applicant.lawyer,
+            )
 
 
 @transaction.atomic
@@ -743,9 +757,7 @@ def create_applicant(
         **(profile_data or {}),
     )
 
-    generate_default_applicant_agreements(
-        applicant=applicant,
-    )
+
 
     return applicant
 
@@ -1145,6 +1157,12 @@ def generate_refund_receipt_for_applicant(
         refund_amount=refund.refund_amount,
         non_refundable_amount=refund.non_refundable_amount,
         refund_reason=refund.refund_reason,
+        refund_method=refund.refund_method,
+        cheque_number=refund.cheque_number,
+        cheque_date=refund.cheque_date,
+        cheque_bank_name=refund.cheque_bank_name,
+        cheque_branch_name=refund.cheque_branch_name,
+        received_by_name=refund.received_by_name,
         refund_bank_snapshot=refund.bank_detail_snapshot,
         applicant_snapshot=refund.applicant_snapshot,
         payment_summary_snapshot=refund.payment_summary_snapshot,

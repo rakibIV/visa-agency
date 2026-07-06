@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Refund Receipt</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; color: #333; }
+        .receipt-container { max-width: 800px; margin: 0 auto; border: 1px solid #ccc; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #002D62; font-size: 28px; text-transform: uppercase; margin-bottom: 5px; }
+        .header h2 { color: #d32f2f; font-size: 24px; margin-top: 0; }
+        .header p { color: #666; font-style: italic; }
+        .flex-row { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .details-col { width: 48%; }
+        .details-table { width: 100%; border-collapse: collapse; }
+        .details-table td { padding: 8px 0; vertical-align: top; }
+        .details-table td:first-child { font-weight: 600; width: 40%; color: #555; }
+        .method-box { border: 2px solid #15803d; border-radius: 8px; padding: 15px; text-align: center; }
+        .method-box h3 { color: #15803d; margin: 0 0 10px 0; }
+        .amount-box { border: 2px solid #002D62; border-radius: 8px; padding: 15px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .amount-box .label { font-weight: 700; color: #002D62; }
+        .amount-box .value { font-size: 24px; font-weight: 700; color: #002D62; }
+        .section-title { background-color: #002D62; color: white; padding: 10px 15px; border-radius: 4px; margin-top: 30px; margin-bottom: 15px; font-weight: 600; }
+        .cheque-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .cheque-table td { padding: 10px; border-bottom: 1px solid #eee; }
+        .cheque-table td:first-child { font-weight: 600; width: 30%; color: #002D62; }
+        .declaration { margin-top: 30px; font-size: 13px; line-height: 1.6; color: #444; }
+        .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+        .sig-line { width: 200px; border-top: 1px solid #333; text-align: center; padding-top: 10px; font-size: 12px; }
+        @media print {
+            body { padding: 0; }
+            .receipt-container { border: none; box-shadow: none; max-width: 100%; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>AL-RAIYAN GROUP</h1>
+            <h2 style="color: #b91c1c;">ACKNOWLEDGEMENT OF <span style="color: #15803d;">CASH</span> REFUND RECEIPT</h2>
+            <p>(80% Refundable - Second Payment)</p>
+            <div style="text-align: right; margin-top: -20px; font-weight: bold; color: #d32f2f;">
+                Receipt No.: {{ receipt.receipt_number }}<br>
+                Date: {{ receipt.generated_at|date:"d/m/Y" }}
+            </div>
+        </div>
+
+        <p style="text-align: center; font-size: 14px; margin-bottom: 30px;">
+            This is to acknowledge that I have received the refund amount as per the terms and conditions of the agreement.
+        </p>
+
+        <div class="flex-row">
+            <div class="details-col">
+                <table class="details-table">
+                    <tr><td>Name</td><td>: {{ applicant.full_name }}</td></tr>
+                    <tr><td>Father's Name</td><td>: {{ profile.father_name|default:"-" }}</td></tr>
+                    <tr><td>Nationality</td><td>: {{ profile.nationality|default:"-" }}</td></tr>
+                    <tr><td>Passport Number</td><td>: {{ applicant.passport_number }}</td></tr>
+                    <tr><td>Application No.</td><td>: {{ applicant.application_id }}</td></tr>
+                    <tr><td>Receipt No.</td><td>: {{ receipt.receipt_number }}</td></tr>
+                    <tr><td>Payment Date</td><td>: {{ receipt.refund.paid_at|date:"d/m/Y"|default:"-" }}</td></tr>
+                    <tr><td>Refund Received Date</td><td>: {{ receipt.refund.paid_at|date:"d/m/Y"|default:"-" }}</td></tr>
+                </table>
+            </div>
+            <div class="details-col">
+                <div class="method-box">
+                    <h3>CASH PAYMENT</h3>
+                    <p style="margin: 0; font-size: 14px; color: #555;">as your refund method.</p>
+                </div>
+                <div class="amount-box">
+                    <div class="label">{{ receipt.refund_percentage }}% REFUND AMOUNT<br>RECEIVED</div>
+                    <div class="value">BDT {{ receipt.refund_amount }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">CASH PAYMENT DETAILS</div>
+        <table class="cheque-table">
+            <tr><td>Payment Method</td><td>: Cash (In Hand)</td></tr>
+            <tr><td>Refund Amount</td><td>: BDT {{ receipt.refund_amount }}</td></tr>
+            <tr><td>Received By</td><td>: {{ receipt.received_by_name|default:"-" }}</td></tr>
+            <tr><td>Refund Received Date</td><td>: {{ receipt.refund.paid_at|date:"d/m/Y"|default:"-" }}</td></tr>
+            <tr><td>Notes</td><td>: {{ receipt.notes|default:"-" }}</td></tr>
+        </table>
+
+        <div class="declaration">
+            <p>I hereby acknowledge that I have received the cash amount of <strong>BDT {{ receipt.refund_amount }}</strong> as a refundable amount of my payment. I confirm that I have accepted this amount in full satisfaction of the refundable amount.</p>
+            <ul>
+                <li>I further acknowledge and confirm that the First Installment is fully paid and is strictly NON-REFUNDABLE under the terms and conditions of the agreement.</li>
+                <li>I declare that I have read, fully understood, and voluntarily accepted these terms and conditions without any force, pressure, or objection, and I shall have no further claim or demand regarding the above-mentioned non-refundable amounts.</li>
+            </ul>
+        </div>
+
+        <div class="signatures">
+            <div>
+                <div class="sig-line">Applicant's Signature<br>Date: ___/___/20__</div>
+            </div>
+            <div>
+                <div class="sig-line">Applicant's Left Thumb Impression<br>Date: ___/___/20__</div>
+            </div>
+            <div>
+                <div class="sig-line">Authorized Company Representative<br>Date: ___/___/20__</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

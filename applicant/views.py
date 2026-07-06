@@ -868,6 +868,29 @@ class ApplicantRefundReceiptViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get"], url_path="print")
+    def print_receipt(self, request, applicant_pk=None, pk=None):
+        from django.shortcuts import render
+        from core.choices import PaymentMethod
+        
+        receipt = self.get_object()
+        applicant = receipt.applicant
+        
+        context = {
+            "receipt": receipt,
+            "applicant": applicant,
+            "profile": getattr(applicant, "profile", None),
+        }
+        
+        if receipt.refund_method == PaymentMethod.CHEQUE:
+            template_name = "applicant/receipts/cheque_receipt.html"
+        elif receipt.refund_method == PaymentMethod.BANK:
+            template_name = "applicant/receipts/bank_receipt.html"
+        else:
+            template_name = "applicant/receipts/cash_receipt.html"
+            
+        return render(request, template_name, context)
+
 
 # ==========================================================
 # Applicant Payment

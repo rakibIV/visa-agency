@@ -1,0 +1,1185 @@
+[
+{
+    "model": "staff.designation",
+    "pk": "3d4dca5f-f6b3-4d5c-9a66-89e2e188bb19",
+    "fields": {
+        "created_at": "2026-07-06T20:48:07.138Z",
+        "updated_at": "2026-07-06T20:48:07.138Z",
+        "name": "Agent",
+        "description": "",
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "staff.staff",
+    "pk": "5543d39f-58aa-4748-9712-52834e5bcb3f",
+    "fields": {
+        "created_at": "2026-07-06T20:48:08.418Z",
+        "updated_at": "2026-07-06T20:48:08.418Z",
+        "user": 3,
+        "employee_id": "EMP-001",
+        "designation": "3d4dca5f-f6b3-4d5c-9a66-89e2e188bb19",
+        "office": "5b86e3d2-07ad-4e2a-bb04-b1dd29c940f2",
+        "photo": null,
+        "signature": null,
+        "phone": "01700000000",
+        "whatsapp": "",
+        "father_name": "",
+        "mother_name": "",
+        "gender": "Male",
+        "date_of_birth": "1990-01-01",
+        "nationality": "Bangladeshi",
+        "nid_number": "",
+        "passport_number": "",
+        "joining_date": "2026-07-06",
+        "reference_staff": null,
+        "is_active": true
+    }
+},
+{
+    "model": "country.country",
+    "pk": "24c19840-02fb-496a-b08d-5f7da1498026",
+    "fields": {
+        "created_at": "2026-07-06T20:47:02.263Z",
+        "updated_at": "2026-07-06T20:47:02.263Z",
+        "name": "Canada",
+        "slug": "canada",
+        "code": "CA",
+        "nationality": "Canadian",
+        "language": "English",
+        "flag": null,
+        "currency": "CAD",
+        "capital": "Ottawa",
+        "time_zone": "UTC",
+        "processing_time": "",
+        "image": null,
+        "short_description": "",
+        "description": "",
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "country.country",
+    "pk": "3aea04e0-5b62-4786-9a26-673e0a25d2e3",
+    "fields": {
+        "created_at": "2026-07-06T20:47:02.751Z",
+        "updated_at": "2026-07-06T20:47:02.751Z",
+        "name": "Australia",
+        "slug": "australia",
+        "code": "AU",
+        "nationality": "Australian",
+        "language": "English",
+        "flag": null,
+        "currency": "AUD",
+        "capital": "Canberra",
+        "time_zone": "UTC",
+        "processing_time": "",
+        "image": null,
+        "short_description": "",
+        "description": "",
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "country.countryrequirement",
+    "pk": "9cefa54c-db88-40a3-970e-d7e8d72ce27f",
+    "fields": {
+        "created_at": "2026-07-06T20:53:09.177Z",
+        "updated_at": "2026-07-06T20:53:09.177Z",
+        "country": "24c19840-02fb-496a-b08d-5f7da1498026",
+        "requirement_type": "DOCUMENT",
+        "title": "Valid Passport",
+        "description": "At least 6 months validity.",
+        "display_order": 0,
+        "is_required": true,
+        "is_active": true
+    }
+},
+{
+    "model": "country.countryfaq",
+    "pk": "58890978-14f8-4ad4-b95e-10bf8757e711",
+    "fields": {
+        "created_at": "2026-07-06T20:53:09.669Z",
+        "updated_at": "2026-07-06T20:53:09.669Z",
+        "country": "24c19840-02fb-496a-b08d-5f7da1498026",
+        "question": "Is English required?",
+        "answer": "Yes, IELTS is usually required.",
+        "display_order": 0,
+        "is_active": true
+    }
+},
+{
+    "model": "visa.visacategory",
+    "pk": "3c820323-ae70-4307-825d-2129c5c1a251",
+    "fields": {
+        "created_at": "2026-07-06T20:47:03.240Z",
+        "updated_at": "2026-07-06T20:47:03.240Z",
+        "name": "Work Visa",
+        "slug": "work-visa",
+        "description": "",
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "visa.visacategory",
+    "pk": "6b2e1f3e-615c-40ee-af76-882cc5a8f201",
+    "fields": {
+        "created_at": "2026-07-06T20:47:03.730Z",
+        "updated_at": "2026-07-06T20:47:03.730Z",
+        "name": "Student Visa",
+        "slug": "student-visa",
+        "description": "",
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "visa.visa",
+    "pk": "8be62878-164c-4566-86fc-6f0d04013027",
+    "fields": {
+        "created_at": "2026-07-06T20:47:04.714Z",
+        "updated_at": "2026-07-06T20:47:04.714Z",
+        "country": "3aea04e0-5b62-4786-9a26-673e0a25d2e3",
+        "category": "3c820323-ae70-4307-825d-2129c5c1a251",
+        "name": "Australia Subclass 482",
+        "slug": "australia-australia-subclass-482",
+        "description": "",
+        "minimum_salary": null,
+        "maximum_salary": null,
+        "working_hours_per_week": null,
+        "overtime_available": false,
+        "minimum_processing_days": null,
+        "maximum_processing_days": null,
+        "duration_in_months": null,
+        "from_any_country": true,
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0,
+        "services": []
+    }
+},
+{
+    "model": "visa.visa",
+    "pk": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+    "fields": {
+        "created_at": "2026-07-06T20:47:04.219Z",
+        "updated_at": "2026-07-06T20:47:04.219Z",
+        "country": "24c19840-02fb-496a-b08d-5f7da1498026",
+        "category": "3c820323-ae70-4307-825d-2129c5c1a251",
+        "name": "Canada PR",
+        "slug": "canada-canada-pr",
+        "description": "",
+        "minimum_salary": null,
+        "maximum_salary": null,
+        "working_hours_per_week": null,
+        "overtime_available": false,
+        "minimum_processing_days": null,
+        "maximum_processing_days": null,
+        "duration_in_months": null,
+        "from_any_country": true,
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0,
+        "services": []
+    }
+},
+{
+    "model": "visa.visarequirement",
+    "pk": "e51f4509-eee8-44e8-a8cc-212b32c0315c",
+    "fields": {
+        "created_at": "2026-07-06T20:53:10.166Z",
+        "updated_at": "2026-07-06T20:53:10.166Z",
+        "visa": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+        "requirement_type": "DOCUMENT",
+        "title": "Job Offer",
+        "description": "Valid job offer from Canadian employer.",
+        "display_order": 0,
+        "is_required": true,
+        "is_active": true
+    }
+},
+{
+    "model": "visa.visajob",
+    "pk": "15358151-b28b-4960-b340-d3c8f30b2497",
+    "fields": {
+        "created_at": "2026-07-06T20:53:10.662Z",
+        "updated_at": "2026-07-06T20:53:10.662Z",
+        "visa": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+        "title": "Software Engineer",
+        "description": "Full-stack developer",
+        "minimum_salary": null,
+        "maximum_salary": null,
+        "currency": "EUR",
+        "vacancies": null,
+        "experience_required": "",
+        "duty_days_per_week": null,
+        "duty_hours_per_day": null,
+        "overtime_available": false,
+        "overtime_rate": "",
+        "accommodation": false,
+        "food": false,
+        "medical": false,
+        "transportation": false,
+        "insurance": false,
+        "air_ticket": false,
+        "contract_duration_months": null,
+        "probation_period_months": null,
+        "location": "",
+        "language_requirement": "",
+        "education_requirement": "",
+        "gender_preference": "",
+        "age_requirement": "",
+        "is_featured": false,
+        "is_active": true,
+        "display_order": 0
+    }
+},
+{
+    "model": "visa.visastep",
+    "pk": "368b2c3b-8cbd-4688-93f3-d6a895f9de8d",
+    "fields": {
+        "created_at": "2026-07-06T20:53:11.156Z",
+        "updated_at": "2026-07-06T20:53:11.156Z",
+        "visa": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+        "title": "1. Submit Documents",
+        "description": "Upload all required documents online.",
+        "display_order": 1,
+        "is_active": true
+    }
+},
+{
+    "model": "visa.visafaq",
+    "pk": "b48f2755-9f9c-42ac-a6f5-b9a5b1c317e3",
+    "fields": {
+        "created_at": "2026-07-06T20:53:11.643Z",
+        "updated_at": "2026-07-06T20:53:11.643Z",
+        "visa": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+        "question": "What is the processing time?",
+        "answer": "Usually 3-6 months.",
+        "display_order": 0,
+        "is_active": true
+    }
+},
+{
+    "model": "visa.jobfacility",
+    "pk": "c3429040-97fa-4434-8368-024c5c9f9e92",
+    "fields": {
+        "created_at": "2026-07-06T20:58:21.282Z",
+        "updated_at": "2026-07-06T20:58:21.282Z",
+        "job": "15358151-b28b-4960-b340-d3c8f30b2497",
+        "title": "Free Accommodation",
+        "description": "Company provides fully furnished apartment.",
+        "display_order": 0,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "24a5638c-5246-4cd4-adac-66dc763b33b6",
+    "fields": {
+        "created_at": "2026-07-06T20:47:37.516Z",
+        "updated_at": "2026-07-06T20:47:37.516Z",
+        "name": "Rejected",
+        "slug": "rejected",
+        "description": "",
+        "color": "",
+        "is_default": false,
+        "is_final": true,
+        "display_order": 7,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "24c3ef7c-d199-4919-88b7-ec4e6f11b5eb",
+    "fields": {
+        "created_at": "2026-07-06T20:47:35.817Z",
+        "updated_at": "2026-07-06T20:47:35.817Z",
+        "name": "Processing",
+        "slug": "processing",
+        "description": "",
+        "color": "",
+        "is_default": false,
+        "is_final": false,
+        "display_order": 2,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "270ed197-8c3d-4e59-9b17-b421b97bbe79",
+    "fields": {
+        "created_at": "2026-07-06T20:47:36.544Z",
+        "updated_at": "2026-07-06T20:47:36.544Z",
+        "name": "Payment Confirmed",
+        "slug": "payment-confirmed",
+        "description": "",
+        "color": "",
+        "is_default": false,
+        "is_final": false,
+        "display_order": 5,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "4913e7dc-d366-4dcb-9fdf-6efa197f8227",
+    "fields": {
+        "created_at": "2026-07-06T20:47:05.210Z",
+        "updated_at": "2026-07-06T20:47:05.210Z",
+        "name": "New",
+        "slug": "",
+        "description": "",
+        "color": "",
+        "is_default": true,
+        "is_final": false,
+        "display_order": 1,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "6efcbe1f-6e71-4fe1-b96d-52fb406ea49e",
+    "fields": {
+        "created_at": "2026-07-06T20:47:37.030Z",
+        "updated_at": "2026-07-06T20:47:37.031Z",
+        "name": "Approved",
+        "slug": "approved",
+        "description": "",
+        "color": "",
+        "is_default": false,
+        "is_final": true,
+        "display_order": 6,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "a500e1f5-761f-4681-8c50-d2111d7bdf38",
+    "fields": {
+        "created_at": "2026-07-06T19:28:35.489Z",
+        "updated_at": "2026-07-06T19:28:35.489Z",
+        "name": "First Payment Received",
+        "slug": "first-payment-received",
+        "description": "The first installment has been received.",
+        "color": "",
+        "is_default": false,
+        "is_final": false,
+        "display_order": 2,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "b4b2cba2-b9b2-49ae-a621-264eae20e915",
+    "fields": {
+        "created_at": "2026-07-06T19:28:34.560Z",
+        "updated_at": "2026-07-06T19:28:34.560Z",
+        "name": "Disable",
+        "slug": "disable",
+        "description": "Initial inactive status.",
+        "color": "",
+        "is_default": true,
+        "is_final": false,
+        "display_order": 1,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicationstatus",
+    "pk": "bdd23eeb-0078-4c96-b6c5-6b8c77cab4fb",
+    "fields": {
+        "created_at": "2026-07-06T19:28:36.287Z",
+        "updated_at": "2026-07-06T19:28:36.287Z",
+        "name": "Profile Created",
+        "slug": "profile-created",
+        "description": "Profile activated after first payment.",
+        "color": "",
+        "is_default": false,
+        "is_final": false,
+        "display_order": 3,
+        "is_active": true
+    }
+},
+{
+    "model": "applicant.applicant",
+    "pk": "ebc7132c-0740-4725-9ab5-c28dd6ee69d7",
+    "fields": {
+        "created_at": "2026-07-06T21:09:05.139Z",
+        "updated_at": "2026-07-06T21:09:05.140Z",
+        "is_deleted": false,
+        "deleted_at": null,
+        "application_id": "",
+        "full_name": "John Doe",
+        "photo": null,
+        "passport_number": "AB1234567",
+        "passport_issue_date": null,
+        "passport_expiry_date": null,
+        "nid_number": "",
+        "date_of_birth": "1990-01-01",
+        "place_of_birth": "",
+        "visa": "f8c35f78-6e63-4a27-8d69-d65bb52e009c",
+        "job": "15358151-b28b-4960-b340-d3c8f30b2497",
+        "current_country": "",
+        "status": "b4b2cba2-b9b2-49ae-a621-264eae20e915",
+        "slot": null,
+        "agreement": null,
+        "lawyer": null,
+        "payment_plan_installments": 2,
+        "remarks": "",
+        "created_by": null,
+        "updated_by": null,
+        "tags": []
+    }
+},
+{
+    "model": "applicant.applicantprofile",
+    "pk": "1c4505e6-c119-4c93-b21e-c6b6482c6deb",
+    "fields": {
+        "created_at": "2026-07-06T21:09:05.647Z",
+        "updated_at": "2026-07-06T21:09:05.647Z",
+        "applicant": "ebc7132c-0740-4725-9ab5-c28dd6ee69d7",
+        "father_name": "Richard Doe",
+        "mother_name": "Jane Doe",
+        "phone": "",
+        "email": "",
+        "occupation": "",
+        "highest_education": "",
+        "religion": "",
+        "marital_status": "",
+        "gender": "",
+        "nationality": "",
+        "emergency_contact_name": "",
+        "emergency_contact_phone": "",
+        "emergency_contact_relation": ""
+    }
+},
+{
+    "model": "applicant.applicantaddress",
+    "pk": "1cbae93f-25df-4da8-9635-118435a313d9",
+    "fields": {
+        "created_at": "2026-07-06T21:09:06.141Z",
+        "updated_at": "2026-07-06T21:09:06.141Z",
+        "applicant": "ebc7132c-0740-4725-9ab5-c28dd6ee69d7",
+        "address_type": "PRESENT",
+        "village": "Downtown",
+        "post_office": "",
+        "police_station": "",
+        "district": "Toronto",
+        "country": "24c19840-02fb-496a-b08d-5f7da1498026",
+        "extra_fields": {}
+    }
+},
+{
+    "model": "applicant.applicantpayment",
+    "pk": "628b5157-0aa6-4d05-a764-0e80752295bd",
+    "fields": {
+        "created_at": "2026-07-06T21:09:29.199Z",
+        "updated_at": "2026-07-06T21:09:29.199Z",
+        "currency_rate": null,
+        "applicant": "ebc7132c-0740-4725-9ab5-c28dd6ee69d7",
+        "payment_number": 1,
+        "installment_type": "INITIAL",
+        "receipt_number": "",
+        "payment_date": "2026-07-07",
+        "payment_method": "CASH",
+        "currency": "USD",
+        "amount": "1000.00",
+        "exchange_rate": "1.0000",
+        "euro_amount": "1000.00",
+        "reference": "",
+        "received_by": "5543d39f-58aa-4748-9712-52834e5bcb3f",
+        "note": ""
+    }
+},
+{
+    "model": "applicant.applicantdocument",
+    "pk": "db7351d9-92ec-4644-ad08-0ebaee3d562a",
+    "fields": {
+        "created_at": "2026-07-06T21:09:51.305Z",
+        "updated_at": "2026-07-06T21:09:51.305Z",
+        "applicant": "ebc7132c-0740-4725-9ab5-c28dd6ee69d7",
+        "document_type": "PASSPORT",
+        "title": "Passport Copy",
+        "file": "",
+        "remarks": "",
+        "verified": false,
+        "verified_by": null,
+        "verified_at": null
+    }
+},
+{
+    "model": "applicant.agreementtemplate",
+    "pk": "05c418d4-d437-4dd1-b470-06d1c85c0a77",
+    "fields": {
+        "created_at": "2026-07-06T21:34:05.567Z",
+        "updated_at": "2026-07-06T22:26:04.712Z",
+        "title": "Declaration",
+        "code": "third-declaration-v1",
+        "agreement_type": "THIRD",
+        "title_en": "Declaration",
+        "title_ar": "إقرار",
+        "title_bn": "ঘোষণা",
+        "description": "Applicant's final declaration regarding terms and refund policies.",
+        "body": "",
+        "version": 1,
+        "is_active": true,
+        "is_default": true
+    }
+},
+{
+    "model": "applicant.agreementtemplate",
+    "pk": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+    "fields": {
+        "created_at": "2026-07-06T21:34:00.456Z",
+        "updated_at": "2026-07-06T22:26:00.614Z",
+        "title": "Terms & Conditions",
+        "code": "second-terms-conditions-v1",
+        "agreement_type": "SECOND",
+        "title_en": "Terms & Conditions",
+        "title_ar": "الشروط والأحكام",
+        "title_bn": "শর্তাবলী",
+        "description": "Applicant terms and conditions regarding accurate information and processing.",
+        "body": "",
+        "version": 1,
+        "is_active": true,
+        "is_default": true
+    }
+},
+{
+    "model": "applicant.agreementtemplate",
+    "pk": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+    "fields": {
+        "created_at": "2026-07-06T21:16:45.740Z",
+        "updated_at": "2026-07-06T22:25:52.605Z",
+        "title": "Agreement Terms & Conditions",
+        "code": "main-standard-visa-agreement-v1",
+        "agreement_type": "MAIN",
+        "title_en": "Agreement Terms & Conditions",
+        "title_ar": "شروط وأحكام الاتفاقية",
+        "title_bn": "চুক্তির শর্তাবলী",
+        "description": "Main agreement outlining responsibilities and refunds.",
+        "body": "",
+        "version": 1,
+        "is_active": true,
+        "is_default": true
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "01434669-bc84-466d-9091-b73a9ce32fc0",
+    "fields": {
+        "created_at": "2026-07-06T21:16:57.484Z",
+        "updated_at": "2026-07-06T21:16:57.484Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "terms-conditions-accuracy",
+        "clause_number": 16,
+        "title_en": "TERMS & CONDITIONS - Accuracy",
+        "title_ar": "دقة المعلومات",
+        "title_bn": "তথ্য সঠিকতা",
+        "body_en": "All information, documents, and papers submitted by the applicant must be accurate, truthful, and valid. If any false information, forged documents, or concealment of facts is discovered, the company reserves the right to cancel the application and deduct the necessary administrative and processing expenses.",
+        "body_ar": "يجب أن تكون جميع المعلومات والمستندات والوثائق المقدمة من قبل مقدم الطلب صحيحة وصادقة وسارية المفعول.",
+        "body_bn": "আবেদনকারী কর্তৃক প্রদত্ত সকল তথ্য, ডকুমেন্ট ও কাগজপত্র সঠিক, সত্য এবং বৈধ হতে হবে। মিথ্যা তথ্য, জাল ডকুমেন্ট বা তথ্য গোপন করার প্রমাণ পাওয়া গেলে আবেদন বাতিল হতে পারে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "05df00a2-cbad-4608-b191-629b379ac13b",
+    "fields": {
+        "created_at": "2026-07-06T21:17:01.160Z",
+        "updated_at": "2026-07-06T21:17:01.160Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "declaration",
+        "clause_number": 21,
+        "title_en": "DECLARATION",
+        "title_ar": "إقرار",
+        "title_bn": "ঘোষণা",
+        "body_en": "I have read, understood, and agree to the terms and conditions of the Agreement, including the refund policy.",
+        "body_ar": "لقد قرأت وفهمت ووافقت على شروط وأحكام الاتفاقية، بما في ذلك سياسة استرداد المبلغ.",
+        "body_bn": "আমি চুক্তির সকল শর্তাবলী ও নিয়ম ভালোভাবে পড়েছি, বুঝেছি এবং রিফান্ড নীতিসহ চুক্তির শর্তাবলীতে সম্মত আছি।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "07a90368-4d81-47fe-b332-63a277a9d46d",
+    "fields": {
+        "created_at": "2026-07-06T21:16:58.966Z",
+        "updated_at": "2026-07-06T21:16:58.966Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "terms-conditions-no-guarantee",
+        "clause_number": 18,
+        "title_en": "TERMS & CONDITIONS - No Guarantee",
+        "title_ar": "لا يوجد ضمان",
+        "title_bn": "কোন গ্যারান্টি নেই",
+        "body_en": "The company does not guarantee 100% approval of a visa, work permit, or employment. However, it will make its best professional efforts to process and manage the applicant’s file appropriately.",
+        "body_ar": "لا تقدم الشركة أي ضمان بنسبة 100٪ للحصول على التأشيرة أو تصريح العمل أو الوظيفة.",
+        "body_bn": "কোম্পানি কোনো অবস্থাতেই ১০০% ভিসা, ওয়ার্ক পারমিট অথবা চাকরি নিশ্চিত হওয়ার গ্যারান্টি প্রদান করে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "12ad31ee-dc42-45c0-8e6d-c3d349ddcc1d",
+    "fields": {
+        "created_at": "2026-07-06T21:34:02.651Z",
+        "updated_at": "2026-07-06T22:26:02.053Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "no-guarantee",
+        "clause_number": 3,
+        "title_en": "No Guarantee",
+        "title_ar": "لا يوجد ضمان",
+        "title_bn": "কোন গ্যারান্টি নেই",
+        "body_en": "The company does not guarantee 100% approval of a visa, work permit, or employment. However, it will make its best professional efforts to process and manage the applicant’s file appropriately.",
+        "body_ar": "لا تقدم الشركة أي ضمان بنسبة 100٪ للحصول على التأشيرة أو تصريح العمل أو الوظيفة.",
+        "body_bn": "কোম্পানি কোনো অবস্থাতেই ১০০% ভিসা, ওয়ার্ক পারমিট অথবা চাকরি নিশ্চিত হওয়ার গ্যারান্টি প্রদান করে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "16d8c5c5-56d2-43f8-b6f9-9d333510e5ce",
+    "fields": {
+        "created_at": "2026-07-06T21:34:04.109Z",
+        "updated_at": "2026-07-06T22:26:03.013Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "refund-rules-for-payments",
+        "clause_number": 5,
+        "title_en": "Refund Rules for Payments",
+        "title_ar": "قواعد الاسترداد",
+        "title_bn": "অর্থ ফেরত নিয়মাবলী",
+        "body_en": "If the visa is not approved, the application is canceled, or the process is not completed for any reason, the amount paid under the first receipt shall be completely non-refundable. However, {refund_percentage}% of the amount paid under the second receipt shall be refunded to the applicant. The remaining 20% shall be retained by the company to cover processing, documentation, administrative, communication, and other service-related expenses. Where applicable, refunds shall be paid within a maximum of five working days from the date of the relevant decision.",
+        "body_ar": "في حال عدم الموافقة على التأشيرة أو إلغاء الطلب أو عدم إتمام الإجراءات لأي سبب من الأسباب، يعتبر المبلغ المدفوع بموجب الإيصال الأول غير قابل للاسترداد بالكامل. أما المبلغ المدفوع بموجب الإيصال الثاني، فيحق لمقدم الطلب استرداد {refund_percentage}٪ منه، بينما تحتفظ الشركة بنسبة 20٪ لتغطية تكاليف المعالجة والتوثيق والإجراءات الإدارية والاتصالات والخدمات الأخرى. وفي حال استحقاق الاسترداد، يتم دفع المبلغ خلال مدة لا تتجاوز خمسة أيام عمل من تاريخ صدور القرار.",
+        "body_bn": "যেকোনো কারণে ভিসা অনুমোদিত না হলে, আবেদন বাতিল হলে অথবা প্রক্রিয়া সম্পন্ন না হলে, প্রথম রিসিটের অধীনে প্রদত্ত অর্থ সম্পূর্ণরূপে অফেরতযোগ্য (Non-Refundable) বলে গণ্য হবে। তবে দ্বিতীয় রিসিটের অধীনে প্রদত্ত মোট অর্থের {refund_percentage}% (আশি শতাংশ) আবেদনকারীকে রিফান্ড প্রদান করা হবে। অবশিষ্ট ২০% (বিশ শতাংশ) অর্থ প্রসেসিং, ডকুমেন্টেশন, প্রশাসনিক কার্যক্রম, যোগাযোগ এবং অন্যান্য সেবামূলক ব্যয়ের জন্য কোম্পানি সংরক্ষণ করবে এবং তা ব্যয় হিসেবে গণ্য হবে। রিফান্ড প্রযোজ্য হলে, সংশ্লিষ্ট সিদ্ধান্ত প্রাপ্তির তারিখ থেকে সর্বোচ্চ ৫ (পাঁচ) কর্মদিবসের মধ্যে আবেদনকারীর প্রাপ্য অর্থ ফেরত প্রদান করা হবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "1847b380-8b9f-45cb-91c7-07f2b709756e",
+    "fields": {
+        "created_at": "2026-07-06T21:16:53.825Z",
+        "updated_at": "2026-07-06T22:25:58.198Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "voluntary-withdrawal-by-applicant",
+        "clause_number": 11,
+        "title_en": "Voluntary Withdrawal by Applicant",
+        "title_ar": "انسحاب المتقدم",
+        "title_bn": "আবেদনকারীর স্বেচ্ছা প্রত্যাহার",
+        "body_en": "If the applicant voluntarily withdraws, cancels, or abandons the visa or employment process, no refund shall be payable.",
+        "body_ar": "إذا قام المتقدم بإلغاء الطلب أو سحب إجراءات التأشيرة أو التوظيف بإرادته، فلن يكون مستحقاً لأي استرداد مالي.",
+        "body_bn": "প্রার্থী নিজ উদ্যোগে আবেদন প্রত্যাহার, বাতিল বা ভিসা/চাকরি প্রক্রিয়া হইতে সরে দাঁড়াইলে প্রদত্ত অর্থের কোনো অংশ ফেরতযোগ্য হইবে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "22d27029-8ed7-4554-841e-d73e4fc05e99",
+    "fields": {
+        "created_at": "2026-07-06T21:16:53.095Z",
+        "updated_at": "2026-07-06T22:25:57.718Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "non-refundable-service-charge",
+        "clause_number": 10,
+        "title_en": "Non-Refundable Service Charge",
+        "title_ar": "رسوم الخدمة غير القابلة للاسترداد",
+        "title_bn": "অফেরতযোগ্য সার্ভিস চার্জ",
+        "body_en": "The remaining amount shall be treated as administrative, processing, and service charges and shall be strictly non-refundable.",
+        "body_ar": "تعتبر النسبة المتبقية من المبلغ المدفوع رسوماً إدارية ورسوم معالجة وخدمات، وهي غير قابلة للاسترداد.",
+        "body_bn": "অবশিষ্ট অর্থ প্রশাসনিক, প্রসেসিং ও সার্ভিস চার্জ হিসেবে গণ্য হইবে, যাহা কোনো অবস্থাতেই ফেরতযোগ্য নহে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "290b6052-a7b3-4626-9919-201e2a4af4e7",
+    "fields": {
+        "created_at": "2026-07-06T21:16:47.232Z",
+        "updated_at": "2026-07-06T22:25:53.571Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "important-notice",
+        "clause_number": 2,
+        "title_en": "IMPORTANT NOTICE",
+        "title_ar": "إشعار هام",
+        "title_bn": "গুরুত্বপূর্ণ ঘোষণা",
+        "body_en": "I am {representative_name}, hereby acknowledge receipt of the above-mentioned amount on behalf of {company_name}, {country}. I shall remain responsible for the collected funds until such funds are deposited into the official company account. However, I have no authority or liability regarding visa approval or employment guarantees.",
+        "body_ar": "أنا، {representative_name}، أقر باستلام المبلغ المذكور أعلاه نيابةً عن {company_name} – {country}. وأتحمل المسؤولية عن الأموال المستلمة حتى إيداعها في الحساب الرسمي للشركة. ولا أتحمل أي مسؤولية أو صلاحية فيما يتعلق بالموافقة على التأشيرة أو ضمان الوظيفة.",
+        "body_bn": "আমি {representative_name}, {company_name}, {country}-এর পক্ষে উল্লিখিত অর্থ গ্রহণ করিলাম। কোম্পানির অফিসিয়াল হিসাব নম্বরে জমা প্রদান না হওয়া পর্যন্ত উক্ত অর্থের দায়িত্ব আমার উপর বর্তাইবে। তবে ভিসা অনুমোদন বা চাকরির নিশ্চয়তা প্রদানের বিষয়ে আমার কোনো ক্ষমতা বা দায়বদ্ধতা নাই।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "32291553-4213-484d-b3bf-75b320c5bdb3",
+    "fields": {
+        "created_at": "2026-07-06T21:34:01.186Z",
+        "updated_at": "2026-07-06T22:26:01.092Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "accuracy-of-information",
+        "clause_number": 1,
+        "title_en": "Accuracy of Information",
+        "title_ar": "دقة المعلومات",
+        "title_bn": "তথ্য সঠিকতা",
+        "body_en": "All information, documents, and papers submitted by the applicant must be accurate, truthful, and valid. If any false information, forged documents, or concealment of facts is discovered, the company reserves the right to cancel the application and deduct the necessary administrative and processing expenses.",
+        "body_ar": "يجب أن تكون جميع المعلومات والمستندات والوثائق المقدمة من قبل مقدم الطلب صحيحة وصادقة وسارية المفعول.",
+        "body_bn": "আবেদনকারী কর্তৃক প্রদত্ত সকল তথ্য, ডকুমেন্ট ও কাগজপত্র সঠিক, সত্য এবং বৈধ হতে হবে। মিথ্যা তথ্য, জাল ডকুমেন্ট বা তথ্য গোপন করার প্রমাণ পাওয়া গেলে আবেদন বাতিল হতে পারে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "4d157f78-2aed-49ad-86dc-3b7b7584fca8",
+    "fields": {
+        "created_at": "2026-07-06T21:16:54.555Z",
+        "updated_at": "2026-07-06T22:25:58.678Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "force-majeure",
+        "clause_number": 12,
+        "title_en": "FORCE MAJEURE",
+        "title_ar": "القوة القاهرة",
+        "title_bn": "অনিবার্য পরিস্থিতি",
+        "body_en": "If visa processing is delayed or suspended due to war, government restrictions, pandemics, regulatory changes, or circumstances beyond the Company's control, all timelines shall automatically be suspended.",
+        "body_ar": "في حال تأخر أو تعليق إجراءات التأشيرة بسبب الحروب أو القيود الحكومية أو الجوائح أو التغييرات التنظيمية، تعتبر المدد الزمنية المتفق عليها معلقة تلقائياً.",
+        "body_bn": "যুদ্ধ, সরকারি বিধিনিষেধ, মহামারী, আন্তর্জাতিক নিষেধাজ্ঞা বা কোম্পানির নিয়ন্ত্রণের বাইরে কোনো পরিস্থিতির কারণে ভিসা কার্যক্রম বিলম্বিত বা স্থগিত হইলে নির্ধারিত সময়সীমা স্বয়ংক্রিয়ভাবে স্থগিত বলিয়া গণ্য হইবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "4f42bd8c-9e50-4e43-9f87-a486e88e7e27",
+    "fields": {
+        "created_at": "2026-07-06T21:16:55.288Z",
+        "updated_at": "2026-07-06T22:25:59.157Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "refund-claim-requirements",
+        "clause_number": 13,
+        "title_en": "REFUND CLAIM REQUIREMENTS",
+        "title_ar": "شروط طلب الاسترداد",
+        "title_bn": "অর্থ ফেরতের শর্ত",
+        "body_en": "The original receipt must be submitted for any refund claim. Photocopies, scanned copies, or lost receipts shall not be accepted.",
+        "body_ar": "يشترط تقديم أصل الإيصال عند طلب أي استرداد مالي، ولن تقبل النسخ المصورة أو المفقودة.",
+        "body_bn": "অর্থ ফেরতের আবেদন করিবার ক্ষেত্রে মূল রিসিট জমা প্রদান বাধ্যতামূলক। ফটোকপি, স্ক্যান কপি বা হারানো রিসিট গ্রহণযোগ্য হইবে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "5b182706-30d2-4f3e-8997-369555396a5b",
+    "fields": {
+        "created_at": "2026-07-06T21:16:46.487Z",
+        "updated_at": "2026-07-06T22:25:53.091Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "acknowledgement-of-receipt",
+        "clause_number": 1,
+        "title_en": "ACKNOWLEDGEMENT OF RECEIPT",
+        "title_ar": "إقرار الاستلام",
+        "title_bn": "অর্থ গ্রহণের স্বীকৃতি",
+        "body_en": "I am {representative_name}, as the authorized representative of {company_name}, {country}, hereby certify that I have received the above mentioned amount and that the said amount shall be subject to the terms and conditions stated in this receipt and agreement.",
+        "body_ar": "أنا، {representative_name}، بصفتي الممثل المعتمد لـ {company_name}، {country}، أشهد بموجب هذا أنني قد استلمت المبلغ المذكور أعلاه وأن هذا المبلغ يخضع للشروط والأحكام الواردة في هذا الإيصال والاتفاقية.",
+        "body_bn": "আমি {representative_name}, {company_name}, {country}-এর অনুমোদিত প্রতিনিধি হিসেবে এই মর্মে প্রত্যয়ন করিতেছি যে, উপরে উল্লিখিত অর্থ আমি গ্রহণ করিয়াছি এবং উক্ত অর্থ এই রিসিট ও চুক্তিপত্রে বর্ণিত শর্তাবলীর আওতাভুক্ত থাকিবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "618df3d4-5172-487a-9203-2383ceba8547",
+    "fields": {
+        "created_at": "2026-07-06T21:34:04.837Z",
+        "updated_at": "2026-07-06T22:26:03.499Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "applicability-of-refunds",
+        "clause_number": 6,
+        "title_en": "Applicability of Refunds",
+        "title_ar": "سريان أحكام الاسترداد",
+        "title_bn": "রিফান্ডের প্রযোজ্যতা",
+        "body_en": "The refund provisions described in this Agreement shall apply only to the amount paid under the second receipt.",
+        "body_ar": "تسري أحكام استرداد المبلغ المنصوص عليها في هذه الاتفاقية حصراً على المبلغ المدفوع بموجب الإيصال الثاني.",
+        "body_bn": "এই চুক্তিতে বর্ণিত রিফান্ড নীতি শুধুমাত্র দ্বিতীয় রিসিটের অধীনে প্রদত্ত অর্থের ক্ষেত্রে প্রযোজ্য হবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "637514ff-e3b3-4b9d-a80d-ad7a9fcc981f",
+    "fields": {
+        "created_at": "2026-07-06T21:16:47.969Z",
+        "updated_at": "2026-07-06T22:25:54.050Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "responsibility",
+        "clause_number": 3,
+        "title_en": "RESPONSIBILITY",
+        "title_ar": "المسؤولية",
+        "title_bn": "দায়িত্ব",
+        "body_en": "Mr/Ms. {representative_name}'s responsibility is strictly limited to the collection of payments and the facilitation of the {refund_percentage}% refund in accordance with the terms of this Agreement. All responsibilities relating to visa processing, employment contracts, recruitment, and job placement shall remain the sole responsibility of {company_name}, {country}.",
+        "body_ar": "تقتصر مسؤولية {representative_name} على استلام المبالغ المالية وضمان استرداد نسبة {refund_percentage}٪ وفقاً لأحكام هذه الاتفاقية. أما جميع المسؤوليات المتعلقة بالتأشيرة والتوظيف وعقود العمل فتقع حصرياً على عاتق {company_name} – {country}.",
+        "body_bn": "জনাব/বেগম {representative_name}-এর দায়িত্ব কেবল অর্থ গ্রহণ এবং এই চুক্তির শর্ত অনুযায়ী {refund_percentage}% অর্থ ফেরত প্রদানের সমন্বয়ের মধ্যে সীমাবদ্ধ। ভিসা প্রসেসিং, চাকরির চুক্তিপত্র, বিদেশে নিয়োগ এবং কর্মসংস্থান সংক্রান্ত সকল দায়িত্ব একমাত্র {company_name}, {country} বহন করিবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "7adf8216-410a-4845-9e05-d1505692a068",
+    "fields": {
+        "created_at": "2026-07-06T21:16:59.698Z",
+        "updated_at": "2026-07-06T21:16:59.698Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "terms-conditions-decisions",
+        "clause_number": 19,
+        "title_en": "TERMS & CONDITIONS - Decisions",
+        "title_ar": "القرارات",
+        "title_bn": "সিদ্ধান্তসমূহ",
+        "body_en": "The company shall not be directly responsible for any decision made by the employer, work permit authority, or embassy, as such decisions are made according to their own policies and discretion.",
+        "body_ar": "لا تتحمل الشركة أي مسؤولية مباشرة عن أي قرار يصدر من صاحب العمل أو جهة تصريح العمل أو السفارة.",
+        "body_bn": "নিয়োগকর্তা, ওয়ার্ক পারমিট কর্তৃপক্ষ অথবা দূতাবাস কর্তৃক গৃহীত যেকোনো সিদ্ধান্তের জন্য কোম্পানি সরাসরি দায়ী থাকবে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "8415d0c4-ccae-4237-9a8e-621ed0cffaa9",
+    "fields": {
+        "created_at": "2026-07-06T21:34:06.298Z",
+        "updated_at": "2026-07-06T22:26:05.190Z",
+        "template": "05c418d4-d437-4dd1-b470-06d1c85c0a77",
+        "clause_key": "declaration",
+        "clause_number": 1,
+        "title_en": "DECLARATION",
+        "title_ar": "إقرار",
+        "title_bn": "ঘোষণা",
+        "body_en": "I have read, understood, and agree to the terms and conditions of the Agreement, including the refund policy.",
+        "body_ar": "لقد قرأت وفهمت ووافقت على شروط وأحكام الاتفاقية، بما في ذلك سياسة استرداد المبلغ.",
+        "body_bn": "আমি চুক্তির সকল শর্তাবলী ও নিয়ম ভালোভাবে পড়েছি, বুঝেছি এবং রিফান্ড নীতিসহ চুক্তির শর্তাবলীতে সম্মত আছি।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "85ba1209-51c5-4595-9d23-6b18edec49a3",
+    "fields": {
+        "created_at": "2026-07-06T22:26:04.097Z",
+        "updated_at": "2026-07-06T22:26:04.097Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "refund-of-second-payment",
+        "clause_number": 7,
+        "title_en": "REFUND OF SECOND PAYMENT",
+        "title_ar": "استرداد الدفعة الثانية",
+        "title_bn": "দ্বিতীয় কিস্তির অর্থ ফেরতের তথ্য",
+        "body_en": "If a refund of the second payment is applicable in accordance with the terms and conditions of the agreement, {refund_percentage}% of the second payment amount shall be refunded to the bank account provided by the applicant.",
+        "body_ar": "إذا كان استرداد الدفعة الثانية مستحقاً وفقاً لشروط وأحكام العقد، فسيتم تحويل {refund_percentage}٪ من قيمة الدفعة الثانية إلى الحساب البنكي الذي حدده مقدم الطلب.",
+        "body_bn": "চুক্তির শর্তাবলী অনুযায়ী যদি দ্বিতীয় রিসিভ/দ্বিতীয় কিস্তির অর্থ রিফান্ড প্রযোজ্য হয়, তাহলে দ্বিতীয় রিসিভে জমা দেওয়া টাকার {refund_percentage}% আবেদনকারীর প্রদানকৃত ব্যাংক অ্যাকাউন্টে ফেরত পাঠানো হবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "88848777-9960-4090-bc19-da3908834cf1",
+    "fields": {
+        "created_at": "2026-07-06T21:17:00.429Z",
+        "updated_at": "2026-07-06T21:17:00.429Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "terms-conditions-refund-rules",
+        "clause_number": 20,
+        "title_en": "TERMS & CONDITIONS - Refund Rules",
+        "title_ar": "قواعد الاسترداد",
+        "title_bn": "অর্থ ফেরত নিয়মাবলী",
+        "body_en": "If the visa is not approved, the application is canceled, or the process is not completed for any reason, the amount paid under the first receipt shall be completely non-refundable. However, 80% of the amount paid under the second receipt shall be refunded to the applicant.",
+        "body_ar": "يعتبر المبلغ المدفوع بموجب الإيصال الأول غير قابل للاسترداد بالكامل. أما المبلغ المدفوع بموجب الإيصال الثاني، فيحق لمقدم الطلب استرداد 80٪ منه.",
+        "body_bn": "যেকোনো কারণে ভিসা অনুমোদিত না হলে প্রথম রিসিটের অধীনে প্রদত্ত অর্থ সম্পূর্ণরূপে অফেরতযোগ্য। তবে দ্বিতীয় রিসিটের অধীনে প্রদত্ত মোট অর্থের ৮০% আবেদনকারীকে রিফান্ড প্রদান করা হবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "a43a86c1-4745-4377-9592-1ca4f1694979",
+    "fields": {
+        "created_at": "2026-07-06T21:16:52.363Z",
+        "updated_at": "2026-07-06T22:25:57.239Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "refund-guarantee",
+        "clause_number": 9,
+        "title_en": "REFUND GUARANTEE",
+        "title_ar": "ضمان الاسترداد",
+        "title_bn": "অর্থ ফেরতের নিশ্চয়তা",
+        "body_en": "In the event that the visa is not issued or is cancelled by the competent authorities, I undertake to obtain the refund from the Company and return {refund_percentage}% of the amount paid to the applicant within five (5) working days.",
+        "body_ar": "في حال عدم إصدار التأشيرة أو إلغائها من قبل الجهات المختصة، أتعهد بمتابعة استرداد المبلغ من الشركة وإعادة {refund_percentage}٪ من المبلغ المدفوع إلى المتقدم خلال خمسة أيام عمل.",
+        "body_bn": "ভিসা অনুমোদিত না হলে অথবা সংশ্লিষ্ট কর্তৃপক্ষ কর্তৃক বাতিল করা হলে, আমি কোম্পানির নিকট হইতে অর্থ আদায় সাপেক্ষে প্রদত্ত অর্থের {refund_percentage}% পাঁচ (৫) কার্যদিবসের মধ্যে প্রার্থীকে ফেরত প্রদান করিব।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "b0e55ecd-6ba3-470e-a9ef-03213e5ed54f",
+    "fields": {
+        "created_at": "2026-07-06T21:16:48.700Z",
+        "updated_at": "2026-07-06T22:25:54.530Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "visa-employment-responsibility",
+        "clause_number": 4,
+        "title_en": "Visa & Employment Responsibility",
+        "title_ar": "مسؤولية التأشيرة والتوظيف",
+        "title_bn": "ভিসা ও চাকরির দায়িত্ব",
+        "body_en": "{company_name} shall bear full responsibility for visa processing, recruitment, employment facilitation, and all related services in accordance with the applicable laws and regulations of {country}.",
+        "body_ar": "تتحمل {company_name} المسؤولية الكاملة عن إجراءات التأشيرة والتوظيف والخدمات ذات الصلة وفقاً للأنظمة المعمول بها في {country}.",
+        "body_bn": "ভিসা প্রসেসিং, নিয়োগ কার্যক্রম, চাকরি প্রদান এবং সংশ্লিষ্ট সকল সেবার সম্পূর্ণ দায়িত্ব {company_name}, {country} বহন করিবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "b290cd8d-0c8f-4b5e-b59d-9b15f1338696",
+    "fields": {
+        "created_at": "2026-07-06T21:34:01.915Z",
+        "updated_at": "2026-07-06T22:26:01.571Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "services-provided",
+        "clause_number": 2,
+        "title_en": "Services Provided",
+        "title_ar": "الخدمات",
+        "title_bn": "সেবাসমূহ",
+        "body_en": "The company will provide documentation, profile preparation, employer submission, work permit, and visa processing services. However, the final approval of the visa, work permit, or employment is subject to the decision of the employer, embassy, and relevant government authorities.",
+        "body_ar": "تقوم الشركة بتقديم خدمات إعداد المستندات والملف الشخصي، وتقديم الطلب إلى صاحب العمل، وإجراءات تصريح العمل والتأشيرة.",
+        "body_bn": "কোম্পানি আবেদনকারীর ডকুমেন্টেশন, প্রোফাইল প্রস্তুতি, নিয়োগকর্তার নিকট আবেদন উপস্থাপন, ওয়ার্ক পারমিট এবং ভিসা প্রসেসিং সংক্রান্ত সেবা প্রদান করবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "b3f1f8ff-096b-4562-8dbc-efc4c7b94443",
+    "fields": {
+        "created_at": "2026-07-06T21:16:50.903Z",
+        "updated_at": "2026-07-06T22:25:55.978Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "visa-rejection-liability-terms",
+        "clause_number": 7,
+        "title_en": "VISA REJECTION & LIABILITY TERMS",
+        "title_ar": "شروط رفض التأشيرة والمسؤولية",
+        "title_bn": "ভিসা প্রত্যাখ্যান ও দায়বদ্ধতার শর্তাবলী",
+        "body_en": "Visa Rejection means the refusal, cancellation, or non-issuance of a visa by the concerned authority. If the visa is rejected or delayed after completion of the processing steps due to the decision of the concerned authority or any reason beyond the Company's control, the Company shall not be responsible. Any refund shall be completed according to the terms specified.",
+        "body_ar": "إذا تم رفض التأشيرة أو تأخيرها بعد استكمال إجراءات المعالجة بسبب قرار من الجهة المختصة أو لأي سبب خارج عن سيطرة الشركة، فلا تتحمل الشركة مسؤولية هذا الرفض أو التأخير.",
+        "body_bn": "প্রসেসিং ধাপ সম্পন্ন হওয়ার পর কর্তৃপক্ষের সিদ্ধান্তে এবং কোম্পানির নিয়ন্ত্রণের বাইরে কোনো কারণে ভিসা প্রত্যাখ্যান বা বিলম্ব হলে, কোম্পানি দায়ী থাকবে না। অর্থ ফেরত এই চুক্তির শর্ত অনুযায়ী সম্পন্ন হবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "b96b6a77-b0c0-4b3a-bc31-fa38a74c96e3",
+    "fields": {
+        "created_at": "2026-07-06T21:16:58.216Z",
+        "updated_at": "2026-07-06T21:16:58.216Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "terms-conditions-services",
+        "clause_number": 17,
+        "title_en": "TERMS & CONDITIONS - Services",
+        "title_ar": "الخدمات",
+        "title_bn": "সেবাসমূহ",
+        "body_en": "The company will provide documentation, profile preparation, employer submission, work permit, and visa processing services. However, the final approval of the visa, work permit, or employment is subject to the decision of the employer, embassy, and relevant government authorities.",
+        "body_ar": "تقوم الشركة بتقديم خدمات إعداد المستندات والملف الشخصي، وتقديم الطلب إلى صاحب العمل، وإجراءات تصريح العمل والتأشيرة.",
+        "body_bn": "কোম্পানি আবেদনকারীর ডকুমেন্টেশন, প্রোফাইল প্রস্তুতি, নিয়োগকর্তার নিকট আবেদন উপস্থাপন, ওয়ার্ক পারমিট এবং ভিসা প্রসেসিং সংক্রান্ত সেবা প্রদান করবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "c2fba015-cf4a-4c51-82e9-19a6e8ff9cb9",
+    "fields": {
+        "created_at": "2026-07-06T21:16:56.750Z",
+        "updated_at": "2026-07-06T22:26:00.132Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "legal-notice",
+        "clause_number": 15,
+        "title_en": "LEGAL NOTICE",
+        "title_ar": "الإشعارات القانونية",
+        "title_bn": "আইনি নোটিশ",
+        "body_en": "{company_name} has no office, branch, or assets in Bangladesh. {representative_name} is not authorized to receive legal notices on behalf of the Company in Bangladesh.",
+        "body_ar": "لا تمتلك {company_name} أي مكتب أو أصول في بنغلاديش، كما أن {representative_name} ليس مفوضاً باستلام الإشعارات القانونية نيابة عن الشركة.",
+        "body_bn": "{company_name}-এর বাংলাদেশে কোনো অফিস, শাখা, প্রতিনিধি কার্যালয় বা সম্পদ নাই। {representative_name} কোম্পানির পক্ষে বাংলাদেশে কোনো আইনি নোটিশ গ্রহণের অনুমোদিত প্রতিনিধি নন.",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "d5fe9c99-509b-41b5-8b0f-4d95e57f7831",
+    "fields": {
+        "created_at": "2026-07-06T21:16:49.435Z",
+        "updated_at": "2026-07-06T22:25:55.012Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "liability-and-obligation",
+        "clause_number": 5,
+        "title_en": "Liability and Obligation",
+        "title_ar": "المسؤولية والالتزام",
+        "title_bn": "দায়বদ্ধতা",
+        "body_en": "According to the terms of the agreement, the candidate shall be obligated to pay 50% of 8 or 11 months' salary, as applicable under the employment contract and regulations of the destination country and profession. If the candidate voluntarily terminates employment before completing the contractual period of 2 years, a penalty of EUR 10,000 shall be payable. However, if during the contractual period the candidate does not receive the facilities and benefits stipulated in the contract, {company_name} shall assume full responsibility.",
+        "body_ar": "وفقًا لشروط العقد، يلتزم المرشح بدفع ما يعادل 50٪ من راتب 8 أو 11 شهرًا، حسب ما ينص عليه عقد العمل. وفي حال ترك المرشح العمل بإرادته قبل إكمال مدة العقد البالغة سنتين، فإنه يلتزم بدفع غرامة قدرها 10,000 يورو. وفي المقابل، إذا لم يحصل المرشح على المزايا المنصوص عليها، فإن {company_name} تتحمل المسؤولية الكاملة.",
+        "body_bn": "চুক্তির শর্তানুযায়ী, প্রার্থী ৮ বা ১১ মাসের বেতনের ৫০% পরিশোধ করতে বাধ্য থাকবেন। চুক্তির মেয়াদ পূর্ণ হওয়ার পূর্বে স্বেচ্ছায় চাকরি ত্যাগ করলে ১০,০০০ ইউরো জরিমানা পরিশোধ করতে হবে। অন্যদিকে, প্রার্থী চুক্তিতে উল্লেখিত সুবিধাসমূহ না পেলে {company_name} সম্পূর্ণ দায়ভার বহন করবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "d727554f-5406-41d4-8c56-5fbef6748a89",
+    "fields": {
+        "created_at": "2026-07-06T21:16:51.633Z",
+        "updated_at": "2026-07-06T22:25:56.458Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "refund-authorization",
+        "clause_number": 8,
+        "title_en": "REFUND AUTHORIZATION",
+        "title_ar": "تفويض الاسترداد",
+        "title_bn": "অর্থ ফেরত প্রদানের অনুমোদন",
+        "body_en": "The Company undertakes to refund {refund_percentage}% of the amount paid to {representative_name} in the event of a final visa rejection, for onward payment to the Candidate.",
+        "body_ar": "تتعهد الشركة برد {refund_percentage}٪ من المبلغ المدفوع إلى {representative_name} في حال الرفض النهائي للتأشيرة، ليقوم بدوره بتحويل المبلغ إلى المتقدم.",
+        "body_bn": "ভিসা আবেদন চূড়ান্তভাবে প্রত্যাখ্যাত হলে কোম্পানি প্রাপ্ত অর্থের {refund_percentage}% {representative_name}-এর নিকট ফেরত প্রদান করিবে, যাহা তিনি পরবর্তীতে প্রার্থীর নিকট হস্তান্তর করিবেন।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "e5d3b764-98d9-49ed-b7be-3bc5f8361735",
+    "fields": {
+        "created_at": "2026-07-06T21:16:56.021Z",
+        "updated_at": "2026-07-06T22:25:59.651Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "governing-law-jurisdiction",
+        "clause_number": 14,
+        "title_en": "GOVERNING LAW & JURISDICTION",
+        "title_ar": "القانون والاختصاص القضائي",
+        "title_bn": "প্রযোজ্য আইন ও বিচারিক এখতিয়ার",
+        "body_en": "This Agreement shall be governed by the laws of {country}. Any dispute shall be subject exclusively to the jurisdiction of the competent courts of {country}.",
+        "body_ar": "تخضع هذه الاتفاقية لأنظمة {country}، وتكون جميع النزاعات من اختصاص المحاكم المختصة في {country} حصرياً.",
+        "body_bn": "এই চুক্তি {country}-এর প্রচলিত আইন অনুযায়ী পরিচালিত ও ব্যাখ্যাত হইবে। যেকোনো বিরোধের একমাত্র বিচারিক এখতিয়ার {country}-এর সংশ্লিষ্ট আদালতসমূহের উপর ন্যস্ত থাকিবে।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "f823544d-f77a-44bc-94a3-1fbf28cecbf9",
+    "fields": {
+        "created_at": "2026-07-06T21:34:03.380Z",
+        "updated_at": "2026-07-06T22:26:02.533Z",
+        "template": "7ce1a1ab-039b-48c9-9885-194592d9a224",
+        "clause_key": "decisions-by-authorities",
+        "clause_number": 4,
+        "title_en": "Decisions by Authorities",
+        "title_ar": "القرارات",
+        "title_bn": "সিদ্ধান্তসমূহ",
+        "body_en": "The company shall not be directly responsible for any decision made by the employer, work permit authority, or embassy, as such decisions are made according to their own policies and discretion.",
+        "body_ar": "لا تتحمل الشركة أي مسؤولية مباشرة عن أي قرار يصدر من صاحب العمل أو جهة تصريح العمل أو السفارة.",
+        "body_bn": "নিয়োগকর্তা, ওয়ার্ক পারমিট কর্তৃপক্ষ অথবা দূতাবাস কর্তৃক গৃহীত যেকোনো সিদ্ধান্তের জন্য কোম্পানি সরাসরি দায়ী থাকবে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+},
+{
+    "model": "applicant.agreementtemplateclause",
+    "pk": "faaa443b-aa78-4c7a-8e2c-6e3c1dc6d0ae",
+    "fields": {
+        "created_at": "2026-07-06T21:16:50.167Z",
+        "updated_at": "2026-07-06T22:25:55.492Z",
+        "template": "babc9876-5d11-4d7b-924f-d8e98e08c6b8",
+        "clause_key": "visa-approval-disclaimer",
+        "clause_number": 6,
+        "title_en": "Visa Approval Disclaimer",
+        "title_ar": "إخلاء المسؤولية بشأن التأشيرة",
+        "title_bn": "ভিসা অনুমোদন সংক্রান্ত দায়মুক্তি",
+        "body_en": "I shall not be held responsible for any decision relating to visa approval, rejection, suspension, or cancellation made by the competent governmental authorities.",
+        "body_ar": "لا أتحمل أي مسؤولية عن قرارات الموافقة أو الرفض أو الإلغاء الصادرة عن الجهات الحكومية المختصة بالتأشيرات.",
+        "body_bn": "ভিসা অনুমোদন, প্রত্যাখ্যান বা বাতিল সংক্রান্ত সিদ্ধান্ত সম্পূর্ণরূপে সংশ্লিষ্ট সরকারি কর্তৃপক্ষের এখতিয়ারভুক্ত; অতএব উক্ত বিষয়ে আমার কোনো ব্যক্তিগত দায় থাকিবে না।",
+        "visibility_mode": "ALL",
+        "visibility_rules": {},
+        "is_active": true,
+        "countries": []
+    }
+}
+]

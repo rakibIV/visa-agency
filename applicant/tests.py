@@ -47,7 +47,7 @@ class AgreementTemplateClauseSerializerTests(SimpleTestCase):
 
 
 class ApplicantAgreementGenerationTests(TestCase):
-    def test_create_applicant_generates_default_agreements(self):
+    def test_payment_confirmation_generates_default_agreements(self):
         country = Country.objects.create(name="Germany", currency="EUR")
         visa_category = VisaCategory.objects.create(name="Work")
         visa = Visa.objects.create(
@@ -64,6 +64,10 @@ class ApplicantAgreementGenerationTests(TestCase):
             slug="new",
             is_default=True,
         )
+        ApplicationStatus.objects.create(
+            name="Payment Confirmed",
+            slug="payment-confirmed",
+        )
         template = AgreementTemplate.objects.create(
             title="Main Agreement",
             code="main-agreement",
@@ -79,7 +83,28 @@ class ApplicantAgreementGenerationTests(TestCase):
             visa=visa,
             job=job,
             status=status,
+            payment_plan_installments=1,
         )
+
+        self.assertFalse(
+            ApplicantAgreement.objects.filter(
+                applicant=applicant,
+                template=template,
+            ).exists()
+        )
+        
+        with patch(
+            "applicant.services.get_exchange_rate",
+            return_value=Decimal("1.0000"),
+        ):
+            create_payment(
+                applicant=applicant,
+                payment_date=date.today(),
+                payment_method="cash",
+                currency="EUR",
+                amount="100.00",
+                installment_type=PaymentInstallmentType.INITIAL,
+            )
 
         self.assertTrue(
             ApplicantAgreement.objects.filter(
@@ -118,11 +143,15 @@ class ApplicantAutomaticTriggerTests(TestCase):
         )
         return applicant
 
-    def test_first_installment_payment_moves_to_first_payment_received(self):
+    def test_first_installment_payment_moves_to_profile_created_cascade(self):
         applicant = self._create_applicant()
         ApplicationStatus.objects.get_or_create(
             name="First Payment Received",
             defaults={"slug": "first-payment-received"},
+        )
+        ApplicationStatus.objects.get_or_create(
+            name="Profile Created",
+            defaults={"slug": "profile-created"},
         )
         ApplicationStatus.objects.get_or_create(
             name="Payment Confirmed",
@@ -145,7 +174,7 @@ class ApplicantAutomaticTriggerTests(TestCase):
         applicant.refresh_from_db()
         self.assertEqual(
             applicant.status.name,
-            "First Payment Received",
+            "Profile Created",
         )
 
     def test_final_installment_payment_moves_to_payment_confirmed(self):

@@ -1174,6 +1174,12 @@ class ApplicantRefund(BaseModel):
         default=RefundType.PARTIAL,
     )
 
+    refund_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        blank=True,
+    )
+
     refund_basis = models.CharField(
         max_length=20,
         choices=RefundBasis.choices,
@@ -1215,6 +1221,32 @@ class ApplicantRefund(BaseModel):
     generated_from_rejection = models.BooleanField(
         default=False,
         db_index=True,
+    )
+
+    cheque_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    cheque_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    cheque_bank_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    cheque_branch_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    received_by_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Name of the person who collected the cash/cheque.",
     )
 
     bank_detail_snapshot = models.JSONField(
@@ -1310,6 +1342,12 @@ class ApplicantRefundReceipt(BaseModel):
         default=ReceiptType.REFUND_RECEIPT,
     )
 
+    refund_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        blank=True,
+    )
+
     refund_percentage = models.DecimalField(
         max_digits=5,
         decimal_places=2,
@@ -1331,6 +1369,31 @@ class ApplicantRefundReceipt(BaseModel):
     )
 
     refund_reason = models.TextField(
+        blank=True,
+    )
+
+    cheque_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    cheque_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    cheque_bank_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    cheque_branch_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    received_by_name = models.CharField(
+        max_length=200,
         blank=True,
     )
 
