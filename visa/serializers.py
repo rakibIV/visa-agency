@@ -1,4 +1,4 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 
 from country.models import Country
 from country.serializers import CountrySerializer
@@ -17,6 +17,7 @@ from .models import (
     JobFacility,
 )
 
+
 class VisaCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -28,6 +29,7 @@ class VisaCategorySerializer(serializers.ModelSerializer):
             "description",
             "is_featured",
         ]
+
 
 class VisaRequirementSerializer(serializers.ModelSerializer):
 
@@ -43,6 +45,7 @@ class VisaRequirementSerializer(serializers.ModelSerializer):
             "is_required",
             "display_order",
         ]
+
 
 class VisaStepSerializer(serializers.ModelSerializer):
 
@@ -101,6 +104,7 @@ class JobFacilitySerializer(serializers.ModelSerializer):
             "display_order",
         ]
 
+
 class VisaJobSerializer(serializers.ModelSerializer):
 
     facilities = JobFacilitySerializer(
@@ -115,7 +119,6 @@ class VisaJobSerializer(serializers.ModelSerializer):
             "id",
             "visa",
             "title",
-            "slug",
             "description",
             "minimum_salary",
             "maximum_salary",
@@ -205,14 +208,14 @@ class VisaDetailSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+
     jobs = VisaJobSerializer(
-    many=True,
-    read_only=True,
+        many=True,
+        read_only=True,
     )
 
     class Meta:
         model = Visa
-        
 
         fields = [
             "id",

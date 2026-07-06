@@ -10,6 +10,8 @@ from .models import (
     StaffMonthlySlot,
     StaffDocument,
     StaffEmergencyContact,
+    SubStaff,
+    SubStaffMonthlySlot,
 )
 from .services import (
     create_staff,
@@ -53,6 +55,13 @@ class StaffMonthlySlotInline(admin.TabularInline):
 class StaffDocumentInline(admin.TabularInline):
 
     model = StaffDocument
+
+    extra = 0
+
+
+class SubStaffInline(admin.TabularInline):
+
+    model = SubStaff
 
     extra = 0
 
@@ -101,6 +110,7 @@ class StaffAdmin(admin.ModelAdmin):
 
     inlines = [
         StaffMonthlySlotInline,
+        SubStaffInline,
         StaffDocumentInline,
         StaffEmergencyContactInline,
     ]
@@ -278,6 +288,56 @@ class StaffMonthlySlotAdmin(admin.ModelAdmin):
 
     autocomplete_fields = [
         "staff",
+    ]
+
+
+@admin.register(SubStaff)
+class SubStaffAdmin(admin.ModelAdmin):
+
+    list_display = [
+        "name",
+        "parent_staff",
+        "phone",
+        "is_active",
+    ]
+
+    list_filter = [
+        "is_active",
+        "parent_staff",
+    ]
+
+    search_fields = [
+        "name",
+        "parent_staff__employee_id",
+        "parent_staff__user__first_name",
+        "parent_staff__user__last_name",
+    ]
+
+    autocomplete_fields = [
+        "parent_staff",
+    ]
+
+
+@admin.register(SubStaffMonthlySlot)
+class SubStaffMonthlySlotAdmin(admin.ModelAdmin):
+
+    list_display = [
+        "sub_staff",
+        "allocation_month",
+        "allocated_slot",
+    ]
+
+    list_filter = [
+        "allocation_month",
+    ]
+
+    search_fields = [
+        "sub_staff__name",
+        "sub_staff__parent_staff__employee_id",
+    ]
+
+    autocomplete_fields = [
+        "sub_staff",
     ]
 
 

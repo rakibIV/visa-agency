@@ -1,3 +1,4 @@
+from cloudinary.models import CloudinaryField
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -392,15 +393,10 @@ class Applicant(SoftDeleteModel):
         db_index=True,
     )
 
-    photo = models.ImageField(
-    upload_to=applicant_photo_upload_path,
-    validators=[
+    photo = CloudinaryField('image', validators=[
         image_extension_validator,
         validate_image_size,
-    ],
-    blank=True,
-    null=True,
-    )
+    ], blank=True, null=True)
 
     passport_number = models.CharField(
         max_length=20,
@@ -1541,13 +1537,10 @@ class ApplicantDocument(BaseModel):
         help_text="Required when document type is 'Other'.",
     )
 
-    file = models.FileField(
-    upload_to=applicant_document_upload_path,
-    validators=[
+    file = CloudinaryField('raw', validators=[
         document_extension_validator,
         validate_document_size,
-    ],
-)
+    ])
 
     remarks = models.TextField(
         blank=True,

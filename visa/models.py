@@ -1,3 +1,4 @@
+from cloudinary.models import CloudinaryField
 from django.db import models
 from django.utils.text import slugify
 from agency.models import AgencyService
@@ -616,15 +617,10 @@ class VisaSEO(BaseModel):
         blank=True,
     )
 
-    og_image = models.ImageField(
-        upload_to="visas/seo/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-    )
+    og_image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
 
     class Meta:
         verbose_name = "Visa SEO"

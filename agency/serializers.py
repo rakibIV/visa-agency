@@ -1,4 +1,4 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 
 from .models import (
     AgencyService,
@@ -35,6 +35,7 @@ class NoticeSerializer(serializers.ModelSerializer):
             "title",
             "slug",
             "content",
+            "attachment",
             "is_pinned",
             "is_active",
             "created_at",
@@ -193,3 +194,5 @@ class CompanyInformationDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+

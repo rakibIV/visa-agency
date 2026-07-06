@@ -13,6 +13,8 @@ from .models import (
     StaffPublicProfile,
     StaffDocument,
     StaffEmergencyContact,
+    SubStaff,
+    SubStaffMonthlySlot,
 )
 from .permissions import IsAdminOrReadOnly
 from .selectors import (
@@ -28,6 +30,8 @@ from .serializers import (
     StaffPublicProfileSerializer,
     StaffDocumentSerializer,
     StaffEmergencyContactSerializer,
+    SubStaffSerializer,
+    SubStaffMonthlySlotSerializer,
 )
 
 
@@ -165,6 +169,100 @@ class StaffMonthlySlotViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             staff_id=self.kwargs.get("staff_pk"),
+        )
+
+
+class SubStaffViewSet(ModelViewSet):
+    serializer_class = SubStaffSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        DjangoFilterBackend,
+        OrderingFilter,
+    ]
+
+    ordering_fields = [
+        "name",
+        "created_at",
+    ]
+
+    ordering = [
+        "name",
+    ]
+
+    def get_queryset(self):
+        queryset = SubStaff.objects.select_related(
+            "parent_staff",
+            "parent_staff__user",
+        )
+
+        staff_pk = self.kwargs.get(
+            "staff_pk",
+        )
+
+        if staff_pk:
+            queryset = queryset.filter(
+                parent_staff_id=staff_pk,
+            )
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(
+            parent_staff_id=self.kwargs.get("staff_pk"),
+        )
+
+
+class SubStaffMonthlySlotViewSet(ModelViewSet):
+    serializer_class = SubStaffMonthlySlotSerializer
+
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    filter_backends = [
+        DjangoFilterBackend,
+        OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "allocation_month",
+    ]
+
+    ordering_fields = [
+        "allocation_month",
+        "allocated_slot",
+    ]
+
+    ordering = [
+        "-allocation_month",
+    ]
+
+    def get_queryset(self):
+        queryset = SubStaffMonthlySlot.objects.select_related(
+            "sub_staff",
+            "sub_staff__parent_staff",
+        ).order_by(
+            "-allocation_month",
+        )
+
+        sub_staff_pk = self.kwargs.get(
+            "sub_staff_pk",
+        )
+
+        if sub_staff_pk:
+            queryset = queryset.filter(
+                sub_staff_id=sub_staff_pk,
+            )
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(
+            sub_staff_id=self.kwargs.get("sub_staff_pk"),
         )
 
 

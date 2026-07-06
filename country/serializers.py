@@ -35,6 +35,8 @@ class CountryFAQSerializer(serializers.ModelSerializer):
 
 
 class CountryGallerySerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = CountryGallery
         fields = [
@@ -59,6 +61,8 @@ class CountrySEOSerializer(serializers.ModelSerializer):
 
 
 class CountrySerializer(serializers.ModelSerializer):
+    flag = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = Country
         fields = [
@@ -76,6 +80,8 @@ class CountrySerializer(serializers.ModelSerializer):
 
 
 class CountryDetailSerializer(serializers.ModelSerializer):
+    flag = serializers.ImageField(required=False, allow_null=True)
+    image = serializers.ImageField(required=False, allow_null=True)
     requirements = CountryRequirementSerializer(
         many=True,
         read_only=True,
@@ -103,6 +109,7 @@ class CountryDetailSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "flag",
+            "image",
             "is_featured",
             "short_description",
             "description",

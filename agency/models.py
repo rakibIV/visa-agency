@@ -1,10 +1,13 @@
+﻿from cloudinary.models import CloudinaryField
 from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
 
 from core.models import BaseModel
 from core.validators import (
+    document_extension_validator,
     image_extension_validator,
+    validate_document_size,
     validate_image_size,
 )
 
@@ -80,6 +83,11 @@ class Notice(BaseModel):
     content = models.TextField(
         blank=True,
     )
+
+    attachment = CloudinaryField('raw', validators=[
+        document_extension_validator,
+        validate_document_size,
+    ], blank=True, null=True, help_text="Optional notice attachment. Allowed: PDF, JPG, JPEG, PNG. Max size: 10 MB.")
 
     is_pinned = models.BooleanField(
         default=False,
@@ -303,25 +311,15 @@ class CompanyInformation(BaseModel):
         max_length=255,
     )
 
-    company_logo = models.ImageField(
-        upload_to="company/logo/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-    )
+    company_logo = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
 
-    favicon = models.ImageField(
-        upload_to="company/favicon/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-    )
+    favicon = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
 
 
     phone = models.CharField(
@@ -434,3 +432,4 @@ class SocialLink(BaseModel):
     is_active = models.BooleanField(
         default=True,
     )
+

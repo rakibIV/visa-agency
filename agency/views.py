@@ -1,5 +1,6 @@
-from django_filters.rest_framework import DjangoFilterBackend
+﻿from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.viewsets import ModelViewSet
 
 from core.permissions import IsAdminOrStaff
@@ -68,6 +69,12 @@ class NoticeViewSet(ModelViewSet):
     queryset = Notice.objects.all()
 
     serializer_class = NoticeSerializer
+
+    parser_classes = [
+        JSONParser,
+        MultiPartParser,
+        FormParser,
+    ]
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -296,3 +303,4 @@ class LawyerViewSet(ModelViewSet):
         "-is_default",
         "name",
     ]
+

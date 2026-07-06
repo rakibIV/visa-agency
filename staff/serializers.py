@@ -12,6 +12,8 @@ from .models import (
     StaffPublicProfile,
     StaffDocument,
     StaffEmergencyContact,
+    SubStaff,
+    SubStaffMonthlySlot,
 )
 
 User = get_user_model()
@@ -38,6 +40,36 @@ class StaffMonthlySlotSerializer(serializers.ModelSerializer):
             "allocation_month",
             "total_slot",
             "remaining_slot",
+        ]
+
+
+class SubStaffSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubStaff
+        fields = [
+            "id",
+            "name",
+            "phone",
+            "is_active",
+            "parent_staff",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "parent_staff",
+        ]
+
+
+class SubStaffMonthlySlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubStaffMonthlySlot
+        fields = [
+            "id",
+            "sub_staff",
+            "allocation_month",
+            "allocated_slot",
+            "created_at",
+            "updated_at",
         ]
 
 
@@ -372,6 +404,11 @@ class StaffDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    sub_staffs = SubStaffSerializer(
+        many=True,
+        read_only=True,
+    )
+
     documents = StaffDocumentSerializer(
         many=True,
         read_only=True,
@@ -405,6 +442,7 @@ class StaffDetailSerializer(serializers.ModelSerializer):
             "reference_staff",
             "is_active",
             "monthly_slots",
+            "sub_staffs",
             "documents",
             "emergency_contacts",
             "created_at",

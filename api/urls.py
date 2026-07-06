@@ -1,6 +1,13 @@
-from django.urls import include, path
+﻿from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
+
+from api.swagger import apply_schema_overrides
 
 from api.public_views import (
     PublicApplicantStatusCheckAPIView,
@@ -51,6 +58,8 @@ from staff.views import (
     StaffMonthlySlotViewSet,
     StaffPublicProfileViewSet,
     StaffViewSet,
+    SubStaffMonthlySlotViewSet,
+    SubStaffViewSet,
 )
 from visa.views import (
     JobFacilityViewSet,
@@ -117,9 +126,13 @@ visa_router.register("seo", VisaSEOViewSet, basename="visa-seo")
 # Staff Nesting
 staff_router = NestedDefaultRouter(router, "staffs", lookup="staff")
 staff_router.register("monthly-slots", StaffMonthlySlotViewSet, basename="staff-monthly-slot")
+staff_router.register("sub-staffs", SubStaffViewSet, basename="staff-sub-staff")
 staff_router.register("public-profile", StaffPublicProfileViewSet, basename="staff-public-profile")
 staff_router.register("documents", StaffDocumentViewSet, basename="staff-document")
 staff_router.register("emergency-contacts", StaffEmergencyContactViewSet, basename="staff-emergency-contact")
+
+sub_staff_router = NestedDefaultRouter(staff_router, "sub-staffs", lookup="sub_staff")
+sub_staff_router.register("monthly-slots", SubStaffMonthlySlotViewSet, basename="sub-staff-monthly-slot")
 
 # Applicant Nesting
 applicant_router = NestedDefaultRouter(router, "applicants", lookup="applicant")
@@ -152,6 +165,25 @@ job_router.register("facilities", JobFacilityViewSet, basename="job-facility")
 # ==========================================
 urlpatterns = [
     path(
+        "schema/",
+        SpectacularAPIView.as_view(),
+        name="api-schema",
+    ),
+    path(
+        "docs/",
+        SpectacularSwaggerView.as_view(
+            url_name="api-schema",
+        ),
+        name="api-docs",
+    ),
+    path(
+        "redoc/",
+        SpectacularRedocView.as_view(
+            url_name="api-schema",
+        ),
+        name="api-redoc",
+    ),
+    path(
         "public/applicant-status/",
         PublicApplicantStatusCheckAPIView.as_view(),
         name="public-applicant-status",
@@ -176,6 +208,8 @@ urlpatterns = [
     path("", include(visa_router.urls)),
     path("", include(job_router.urls)),
     path("", include(staff_router.urls)),
+    path("", include(sub_staff_router.urls)),
     path("", include(applicant_router.urls)),
     path("", include(agreement_template_router.urls)),
 ]
+

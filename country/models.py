@@ -1,3 +1,4 @@
+from cloudinary.models import CloudinaryField
 from django.db import models
 from django.utils.text import slugify
 from core.choices import RequirementType
@@ -40,15 +41,10 @@ class Country(BaseModel):
     help_text="The official language of the country",
     )
 
-    flag = models.ImageField(
-        upload_to="countries/flags/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-    )
+    flag = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
 
     currency = models.CharField(
         max_length=3,
@@ -74,16 +70,10 @@ class Country(BaseModel):
     help_text="Estimated processing time phrase (e.g., '3-5 business days', '2 weeks').",
     )
 
-    image = models.ImageField(
-        upload_to="countries/images/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-        help_text="Beautiful featured image of this country.",
-    )
+    image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True, help_text="Beautiful featured image of this country.")
 
     short_description = models.CharField(
         max_length=255,
@@ -238,13 +228,10 @@ class CountryGallery(BaseModel):
         related_name="gallery",
     )
 
-    image = models.ImageField(
-        upload_to="countries/gallery/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-    )
+    image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ])
 
     caption = models.CharField(
         max_length=255,
@@ -305,15 +292,10 @@ class CountrySEO(BaseModel):
         blank=True,
     )
 
-    og_image = models.ImageField(
-        upload_to="countries/seo/",
-        validators=[
-            image_extension_validator,
-            validate_image_size,
-        ],
-        blank=True,
-        null=True,
-    )
+    og_image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
 
     class Meta:
         verbose_name = "Country SEO"

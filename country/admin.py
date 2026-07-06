@@ -1,4 +1,6 @@
 from django.contrib import admin
+from cloudinary.forms import CloudinaryFileField
+from django import forms
 
 from .models import (
     Country,
@@ -11,6 +13,32 @@ from .models import (
 class CountryRequirementInline(admin.TabularInline):
     model = CountryRequirement
     extra = 1
+
+
+class CountryAdminForm(forms.ModelForm):
+    flag = CloudinaryFileField(required=False)
+    image = CloudinaryFileField(required=False)
+    og_image = CloudinaryFileField(required=False)
+
+    class Meta:
+        model = Country
+        fields = '__all__'
+
+
+class CountryGalleryAdminForm(forms.ModelForm):
+    image = CloudinaryFileField(required=False)
+
+    class Meta:
+        model = CountryGallery
+        fields = '__all__'
+
+
+class CountrySEOAdminForm(forms.ModelForm):
+    og_image = CloudinaryFileField(required=False)
+
+    class Meta:
+        model = CountrySEO
+        fields = '__all__'
 
 
 class CountryFAQInline(admin.TabularInline):
@@ -31,6 +59,8 @@ class CountrySEOInline(admin.StackedInline):
 
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
+    form = CountryAdminForm
+
     list_display = (
         "name",
         "code",
@@ -134,6 +164,8 @@ class CountryFAQAdmin(admin.ModelAdmin):
 
 @admin.register(CountryGallery)
 class CountryGalleryAdmin(admin.ModelAdmin):
+    form = CountryGalleryAdminForm
+
     list_display = (
         "country",
         "caption",
@@ -159,6 +191,8 @@ class CountryGalleryAdmin(admin.ModelAdmin):
 
 @admin.register(CountrySEO)
 class CountrySEOAdmin(admin.ModelAdmin):
+    form = CountrySEOAdminForm
+
     list_display = (
         "country",
         "meta_title",
