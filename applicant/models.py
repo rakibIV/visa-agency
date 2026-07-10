@@ -33,6 +33,7 @@ from core.choices import (
     RefundStatus,
     RefundType,
     RefundBasis,
+    RefundMethodPreference,
 )
 
 from .utils import (
@@ -443,6 +444,15 @@ class Applicant(SoftDeleteModel):
         related_name="applicants",
     )
 
+    secondary_job = models.ForeignKey(
+        "visa.VisaJob",
+        on_delete=models.PROTECT,
+        related_name="secondary_applicants",
+        null=True,
+        blank=True,
+        help_text="Optional secondary job choice.",
+    )
+
     current_country = models.CharField(
         max_length=100,
         blank=True,
@@ -759,6 +769,13 @@ class ApplicantProfile(BaseModel):
 
     emergency_contact_relation = models.CharField(
         max_length=100,
+        blank=True,
+    )
+
+    preferred_refund_method = models.CharField(
+        max_length=20,
+        choices=RefundMethodPreference.choices,
+        default=RefundMethodPreference.BANK,
         blank=True,
     )
 

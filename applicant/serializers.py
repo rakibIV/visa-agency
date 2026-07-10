@@ -85,24 +85,6 @@ class ApplicantTagSerializer(serializers.ModelSerializer):
         )
 
 
-class AgreementTemplateSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = AgreementTemplate
-
-        fields = (
-            "id",
-            "title",
-            "body",
-            "version",
-            "is_active",
-        )
-
-        read_only_fields = (
-            "id",
-        )
-
-
 class AgreementTemplateClauseSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -132,6 +114,28 @@ class AgreementTemplateClauseSerializer(serializers.ModelSerializer):
             "clause_key",
             "created_at",
             "updated_at",
+        )
+
+
+class AgreementTemplateSerializer(serializers.ModelSerializer):
+    clauses = AgreementTemplateClauseSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AgreementTemplate
+
+        fields = (
+            "id",
+            "title",
+            "code",
+            "agreement_type",
+            "body",
+            "version",
+            "is_active",
+            "clauses",
+        )
+
+        read_only_fields = (
+            "id",
         )
 
 
@@ -254,6 +258,7 @@ class ApplicantProfileSerializer(serializers.ModelSerializer):
             "emergency_contact_name",
             "emergency_contact_phone",
             "emergency_contact_relation",
+            "preferred_refund_method",
         )
 
         read_only_fields = (
@@ -948,6 +953,11 @@ class ApplicantListSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    secondary_job_name = serializers.CharField(
+        source="secondary_job.title",
+        read_only=True,
+    )
+
     status_name = serializers.CharField(
         source="status.name",
         read_only=True,
@@ -968,6 +978,9 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "passport_number",
             "visa",
             "visa_name",
+            "job",
+            "secondary_job",
+            "secondary_job_name",
             "status",
             "status_name",
             "payment_plan_installments",
@@ -1014,6 +1027,8 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 
 class ApplicantSerializer(serializers.ModelSerializer):
 
+    profile = ApplicantProfileSerializer(required=False)
+
     class Meta:
         model = Applicant
 
@@ -1031,8 +1046,10 @@ class ApplicantSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        profile_data = validated_data.pop("profile", None)
 
         return create_applicant(
+            profile_data=profile_data,
             **validated_data,
         )
 
@@ -1041,9 +1058,11 @@ class ApplicantSerializer(serializers.ModelSerializer):
         instance,
         validated_data,
     ):
+        profile_data = validated_data.pop("profile", None)
 
         return update_applicant(
             applicant=instance,
+            profile_data=profile_data,
             **validated_data,
         )
 
@@ -1120,6 +1139,11 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    secondary_job_name = serializers.CharField(
+        source="secondary_job.title",
+        read_only=True,
+    )
+
     slot_month = serializers.DateField(
         source="slot.allocation_month",
         read_only=True,
@@ -1147,6 +1171,9 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "payment_plan_installments",
             "visa",
             "visa_name",
+            "job",
+            "secondary_job",
+            "secondary_job_name",
             "status",
             "slot",
             "slot_month",

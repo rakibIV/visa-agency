@@ -1,4 +1,4 @@
-﻿from django.urls import include, path
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -6,6 +6,10 @@ from drf_spectacular.views import (
 )
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 from api.swagger import apply_schema_overrides
 
@@ -164,6 +168,9 @@ job_router.register("facilities", JobFacilityViewSet, basename="job-facility")
 # 4. URLPATTERNS REGISTRATION
 # ==========================================
 urlpatterns = [
+    # JWT Authentication Endpoints
+    path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path(
         "schema/",
         SpectacularAPIView.as_view(),

@@ -16,7 +16,8 @@ from rest_framework.serializers import Serializer
 from rest_framework.viewsets import ModelViewSet
 from .filters import ApplicantFilter
 from .permissions import IsAdminOrReadOnly
-
+from django.shortcuts import render
+from core.choices import PaymentMethod
 
 from .filters import (
     AgreementTemplateFilter,
@@ -870,8 +871,7 @@ class ApplicantRefundReceiptViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="print")
     def print_receipt(self, request, applicant_pk=None, pk=None):
-        from django.shortcuts import render
-        from core.choices import PaymentMethod
+        
         
         receipt = self.get_object()
         applicant = receipt.applicant

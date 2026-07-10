@@ -4,6 +4,7 @@ from rest_framework.filters import (
     SearchFilter,
 )
 from rest_framework.viewsets import ModelViewSet
+from django.db.models import F, Count
 
 from .filters import StaffFilter
 from .models import (
@@ -149,6 +150,9 @@ class StaffMonthlySlotViewSet(ModelViewSet):
         queryset = (
             StaffMonthlySlot.objects.select_related(
                 "staff",
+            )
+            .annotate(
+                remaining_slot=F("total_slot") - Count("applicants"),
             )
             .order_by(
                 "-allocation_month",

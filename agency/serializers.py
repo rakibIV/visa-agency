@@ -154,6 +154,15 @@ class LawyerSerializer(serializers.ModelSerializer):
 
 
 class CompanyInformationSerializer(serializers.ModelSerializer):
+    company_logo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+    favicon = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = CompanyInformation
         fields = [
@@ -162,6 +171,11 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
             "company_logo",
             "favicon",
             "phone",
+            "address",
+            "about",
+            "mission",
+            "vision",
+            "is_active",
         ]
 
 

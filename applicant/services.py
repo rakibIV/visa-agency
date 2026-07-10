@@ -702,10 +702,6 @@ def _sync_payment_status(applicant, changed_by=None):
                 remarks="Status updated automatically from payment progress.",
             )
             
-        # Generate default agreements once payment is confirmed
-        from applicant.services import generate_default_applicant_agreements
-        generate_default_applicant_agreements(applicant=applicant)
-        
         return
 
     if applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
@@ -733,6 +729,10 @@ def _sync_payment_status(applicant, changed_by=None):
                 send_email=bool(applicant.lawyer),
                 sender=applicant.lawyer,
             )
+            
+        # Generate default agreements upon first payment
+        from applicant.services import generate_default_applicant_agreements
+        generate_default_applicant_agreements(applicant=applicant)
 
 
 @transaction.atomic

@@ -123,3 +123,10 @@ class DocumentType(models.TextChoices):
     POLICE_CLEARANCE = "POLICE_CLEARANCE", "Police Clearance"
     EDUCATIONAL = "EDUCATIONAL", "Educational Certificate"
     OTHER = "OTHER", "Other"
+
+
+class RefundMethodPreference(models.TextChoices):
+    BANK = 'bank', 'Bank Transfer'
+    CHEQUE = 'cheque', 'Cheque'
+    CASH = 'cash', 'Cash'
+
