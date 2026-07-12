@@ -5,7 +5,7 @@ from django.utils.text import slugify
 
 from applicant.models import AgreementTemplate, AgreementTemplateClause
 from country.models import Country
-from core.choices import AgreementType, ClauseVisibilityMode
+from core.choices import ClauseVisibilityMode
 
 class Command(BaseCommand):
     help = "Seeds the database with Agreement Template 1 and Template 2"
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         template_1 = AgreementTemplate.objects.create(
             title="Employment & Visa Service Agreement",
             code="main-agreement-v1",
-            agreement_type=AgreementType.MAIN,
+            sequence=1,
             version=1,
             is_active=True,
             is_default=True,
@@ -205,7 +205,7 @@ class Command(BaseCommand):
         template_2 = AgreementTemplate.objects.create(
             title="Terms & Conditions",
             code="terms-and-conditions-v1",
-            agreement_type=AgreementType.SECOND,
+            sequence=2,
             version=1,
             is_active=True,
             is_default=True,

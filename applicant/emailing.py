@@ -166,11 +166,20 @@ def send_applicant_email(
         )
 
     if sender is None:
-        raise ValidationError(
-            {
-                "sender": "No lawyer sender is assigned to this applicant."
-            }
-        )
+        class SystemSender:
+            def __init__(self):
+                self.env_key = os.getenv("SYSTEM_ENV_KEY", "SYSTEM")
+                self.name = os.getenv("SYSTEM_EMAIL_USERNAME", "System Administrator")
+                self.email = os.getenv(f"{self.env_key}_EMAIL")
+                
+        sender = SystemSender()
+
+        if not sender.email:
+            raise ValidationError(
+                {
+                    "sender": "No lawyer assigned and system fallback email is not configured."
+                }
+            )
 
     context = build_email_context(
         applicant=applicant,

@@ -16,13 +16,6 @@ class ReceiptType(models.TextChoices):
     MONEY_RECEIPT = "MONEY_RECEIPT", "Money Receipt"
     REFUND_RECEIPT = "REFUND_RECEIPT", "Refund Receipt"
 
-class AgreementType(models.TextChoices):
-    MAIN = "MAIN", "Main Agreement"
-    SECOND = "SECOND", "Second Agreement"
-    THIRD = "THIRD", "Third Agreement"
-    REFUND = "REFUND", "Refund Agreement"
-    OTHER = "OTHER", "Other Agreement"
-
 class AgreementLanguage(models.TextChoices):
     ENGLISH = "en", "English"
     ARABIC = "ar", "Arabic"

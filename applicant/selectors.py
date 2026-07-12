@@ -16,7 +16,6 @@ from .models import (
     ApplicationStatus,
     ApplicantTag,
     AgreementTemplate,
-    CurrencyRate,
 )
 
 
@@ -63,15 +62,7 @@ def get_agreement_templates():
     )
 
 
-def get_currency_rates():
-    return (
-        CurrencyRate.objects.all()
-        .order_by(
-            "-fetched_at",
-            "base_currency",
-            "target_currency",
-        )
-    )
+
 
 
 # =========================================================

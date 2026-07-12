@@ -1,4 +1,4 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 
 from country.models import Country
 from country.serializers import CountrySerializer
@@ -72,6 +72,7 @@ class VisaFAQSerializer(serializers.ModelSerializer):
             "question",
             "answer",
             "display_order",
+            "is_active",
         ]
 
 

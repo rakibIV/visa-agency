@@ -4,6 +4,7 @@ from rest_framework.filters import (
     SearchFilter,
 )
 from rest_framework.viewsets import ModelViewSet
+from rest_framework import serializers
 from django.db.models import F, Count
 
 from .filters import StaffFilter
@@ -171,8 +172,16 @@ class StaffMonthlySlotViewSet(ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        staff_pk = self.kwargs.get("staff_pk")
+        allocation_month = serializer.validated_data.get("allocation_month")
+        
+        if StaffMonthlySlot.objects.filter(staff_id=staff_pk, allocation_month=allocation_month).exists():
+            raise serializers.ValidationError(
+                {"allocation_month": ["A slot for this month already exists for this staff."]}
+            )
+            
         serializer.save(
-            staff_id=self.kwargs.get("staff_pk"),
+            staff_id=staff_pk,
         )
 
 

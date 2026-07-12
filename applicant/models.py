@@ -15,6 +15,7 @@ from core.validators import (
     image_extension_validator,
     validate_document_size,
     validate_image_size,
+    validate_profile_image_dimensions,
     validate_nid_number,
     validate_passport_number,
     validate_phone_number,
@@ -27,7 +28,6 @@ from core.choices import (
     PaymentInstallmentType,
     ReceiptType,
     AgreementLanguage,
-    AgreementType,
     ClauseVisibilityMode,
     DocumentType,
     RefundStatus,
@@ -189,11 +189,10 @@ class AgreementTemplate(BaseModel):
         help_text="Stable API/admin code for this agreement template.",
     )
 
-    agreement_type = models.CharField(
-        max_length=20,
-        choices=AgreementType.choices,
-        default=AgreementType.MAIN,
+    sequence = models.PositiveIntegerField(
+        default=1,
         db_index=True,
+        help_text="Order in which this agreement appears.",
     )
 
     title_en = models.CharField(
@@ -241,7 +240,7 @@ class AgreementTemplate(BaseModel):
 
     class Meta:
         ordering = [
-            "agreement_type",
+            "sequence",
             "-version",
             "title",
         ]
@@ -252,17 +251,17 @@ class AgreementTemplate(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=[
-                    "agreement_type",
+                    "sequence",
                     "version",
                 ],
-                name="unique_agreement_type_version",
+                name="unique_sequence_version",
             ),
         ]
 
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = slugify(
-                f"{self.agreement_type}-{self.title}-v{self.version}"
+                f"seq-{self.sequence}-{self.title}-v{self.version}"
             )
 
         if not self.title_en:
@@ -397,6 +396,7 @@ class Applicant(SoftDeleteModel):
     photo = CloudinaryField('image', validators=[
         image_extension_validator,
         validate_image_size,
+        validate_profile_image_dimensions,
     ], blank=True, null=True)
 
     passport_number = models.CharField(
@@ -597,12 +597,6 @@ class ApplicantAgreement(BaseModel):
         blank=True,
     )
 
-    agreement_type = models.CharField(
-        max_length=20,
-        choices=AgreementType.choices,
-        default=AgreementType.MAIN,
-        db_index=True,
-    )
 
     language = models.CharField(
         max_length=10,
@@ -678,7 +672,6 @@ class ApplicantAgreement(BaseModel):
             models.Index(
                 fields=[
                     "applicant",
-                    "agreement_type",
                 ],
             ),
             models.Index(
@@ -860,13 +853,12 @@ class ApplicantAddress(BaseModel):
 
 
 class ApplicantPayment(BaseModel):
-    currency_rate = models.ForeignKey(
-        "CurrencyRate",
-        on_delete=models.SET_NULL,
-        related_name="payments",
+    exchange_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=6,
         null=True,
         blank=True,
-        help_text="Stored exchange rate snapshot used for this payment.",
+        help_text="Exchange rate snapshot from CurrencyFreaks at the time of payment.",
     )
 
     applicant = models.ForeignKey(
@@ -1483,71 +1475,6 @@ class ApplicantRefundReceipt(BaseModel):
 
     def __str__(self):
         return f"{self.receipt_number} | {self.applicant.full_name}"
-
-
-class CurrencyRate(BaseModel):
-    base_currency = models.CharField(
-        max_length=3,
-        db_index=True,
-        help_text="Source ISO currency code.",
-    )
-
-    target_currency = models.CharField(
-        max_length=3,
-        db_index=True,
-        default="EUR",
-        help_text="Target ISO currency code.",
-    )
-
-    rate = models.DecimalField(
-        max_digits=18,
-        decimal_places=6,
-        help_text="Exchange rate from base to target currency.",
-    )
-
-    source = models.CharField(
-        max_length=100,
-        default="CurrencyFreaks",
-    )
-
-    fetched_at = models.DateTimeField(
-        default=timezone.now,
-        db_index=True,
-    )
-
-    raw_response = models.JSONField(
-        default=dict,
-        blank=True,
-    )
-
-    class Meta:
-        ordering = [
-            "-fetched_at",
-            "base_currency",
-            "target_currency",
-        ]
-
-        verbose_name = "Currency Rate"
-        verbose_name_plural = "Currency Rates"
-
-        constraints = [
-            models.UniqueConstraint(
-                fields=[
-                    "base_currency",
-                    "target_currency",
-                ],
-                name="unique_currency_rate_pair",
-            ),
-        ]
-
-    def __str__(self):
-        return (
-            f"{self.base_currency}/{self.target_currency} = "
-            f"{self.rate}"
-        )
-    
-
-
 
 class ApplicantStatusHistory(BaseModel):
     applicant = models.ForeignKey(

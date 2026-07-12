@@ -206,6 +206,13 @@ class StaffSerializer(serializers.ModelSerializer):
 
     reference_staff = serializers.SerializerMethodField()
 
+    photo = serializers.ImageField(required=False, allow_null=True)
+
+    monthly_slots = StaffMonthlySlotSerializer(
+        many=True,
+        read_only=True,
+    )
+
     class Meta:
         model = Staff
         fields = [
@@ -220,6 +227,7 @@ class StaffSerializer(serializers.ModelSerializer):
             "whatsapp",
             "reference_staff",
             "is_active",
+            "monthly_slots",
         ]
 
     def get_reference_staff(self, obj):
@@ -263,6 +271,9 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
     employee_id = serializers.CharField(
         read_only=True,
     )
+
+    photo = serializers.ImageField(required=False, allow_null=True)
+    signature = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Staff
@@ -398,6 +409,9 @@ class StaffDetailSerializer(serializers.ModelSerializer):
     office = serializers.StringRelatedField()
 
     reference_staff = serializers.SerializerMethodField()
+
+    photo = serializers.ImageField(required=False, allow_null=True)
+    signature = serializers.ImageField(required=False, allow_null=True)
 
     monthly_slots = StaffMonthlySlotSerializer(
         many=True,

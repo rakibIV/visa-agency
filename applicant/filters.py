@@ -11,7 +11,6 @@ from .models import (
     ApplicantRefundReceipt,
     ApplicantTag,
     ApplicationStatus,
-    CurrencyRate,
 )
 
 
@@ -216,27 +215,4 @@ class ApplicantNoteFilter(django_filters.FilterSet):
         }
 
 
-# =========================================================
-# Currency Rates
-# =========================================================
 
-class CurrencyRateFilter(django_filters.FilterSet):
-
-    fetched_from = django_filters.DateTimeFilter(
-        field_name="fetched_at",
-        lookup_expr="gte",
-    )
-
-    fetched_to = django_filters.DateTimeFilter(
-        field_name="fetched_at",
-        lookup_expr="lte",
-    )
-
-    class Meta:
-        model = CurrencyRate
-
-        fields = {
-            "base_currency": ["exact", "icontains"],
-            "target_currency": ["exact", "icontains"],
-            "source": ["icontains"],
-        }

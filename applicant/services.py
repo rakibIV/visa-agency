@@ -17,7 +17,6 @@ from .models import (
     ApplicantAddress,
     ApplicantAgreement,
     ApplicantProfile,
-    CurrencyRate,
     ApplicantPayment,
     ApplicantMoneyReceipt,
     ApplicantRefund,
@@ -612,24 +611,35 @@ def generate_default_applicant_agreements(
 
 
 def _get_status_by_name_or_slug(name):
-    slug = name.lower().replace(" ", "-")
+    from django.db.models import Q
 
-    return (
-        ApplicationStatus.objects.filter(
-            slug=slug,
-            is_active=True,
-        ).first()
-        or ApplicationStatus.objects.filter(
-            name__iexact=name,
-            is_active=True,
-        ).first()
-    )
+    slug = name.lower().replace(" ", "-")
+    
+    # Aliases for system-critical statuses to handle user variations (e.g. typos, numbers)
+    aliases = {
+        "1st Payment recieved": ["first payment received", "first payment", "1st payment", "1st payment received", "1st payment recieved"],
+        "Profile Created": ["profile created"],
+        "Payment Confirmed": ["payment confirmed"],
+    }
+    
+    query = Q(slug=slug) | Q(name__iexact=name)
+    
+    if name in aliases:
+        for alias in aliases[name]:
+            alias_slug = alias.lower().replace(" ", "-")
+            query = query | Q(slug=alias_slug) | Q(name__iexact=alias)
+            
+    return ApplicationStatus.objects.filter(query, is_active=True).first()
 
 
 def _is_rejected_status(status):
+    name_lower = getattr(status, "name", "").lower()
+    slug_lower = getattr(status, "slug", "").lower()
     return (
-        getattr(status, "slug", "").lower() == "rejected"
-        or getattr(status, "name", "").lower() == "rejected"
+        "rejected" in name_lower
+        or "rejection" in name_lower
+        or "rejected" in slug_lower
+        or "rejection" in slug_lower
     )
 
 
@@ -702,10 +712,14 @@ def _sync_payment_status(applicant, changed_by=None):
                 remarks="Status updated automatically from payment progress.",
             )
             
+        # Generate default agreements when payment is confirmed
+        from applicant.services import generate_default_applicant_agreements
+        generate_default_applicant_agreements(applicant=applicant)
+            
         return
 
     if applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
-        first_payment_status = _get_status_by_name_or_slug("First Payment Received")
+        first_payment_status = _get_status_by_name_or_slug("1st Payment recieved")
         profile_created_status = _get_status_by_name_or_slug("Profile Created")
         
         # Transition to First Payment Received
@@ -729,20 +743,17 @@ def _sync_payment_status(applicant, changed_by=None):
                 send_email=bool(applicant.lawyer),
                 sender=applicant.lawyer,
             )
-            
-        # Generate default agreements upon first payment
-        from applicant.services import generate_default_applicant_agreements
-        generate_default_applicant_agreements(applicant=applicant)
 
 
 @transaction.atomic
 def create_applicant(
     *,
     profile_data=None,
+    refund_bank_detail_data=None,
     **applicant_data,
 ):
     """
-    Creates an applicant together with the profile.
+    Creates an applicant together with the profile and refund bank details.
     """
 
     application_id = generate_application_id()
@@ -757,7 +768,11 @@ def create_applicant(
         **(profile_data or {}),
     )
 
-
+    if refund_bank_detail_data is not None:
+        ApplicantRefundBankDetail.objects.create(
+            applicant=applicant,
+            **refund_bank_detail_data,
+        )
 
     return applicant
 
@@ -767,10 +782,11 @@ def update_applicant(
     *,
     applicant,
     profile_data=None,
+    refund_bank_detail_data=None,
     **applicant_data,
 ):
     """
-    Updates applicant and profile.
+    Updates applicant, profile, and refund bank details.
     """
 
     for field, value in applicant_data.items():
@@ -784,7 +800,9 @@ def update_applicant(
 
     if profile_data is not None:
 
-        profile = applicant.profile
+        profile = getattr(applicant, "profile", None)
+        if profile is None:
+            profile = ApplicantProfile.objects.create(applicant=applicant)
 
         for field, value in profile_data.items():
             setattr(
@@ -794,6 +812,22 @@ def update_applicant(
             )
 
         profile.save()
+
+    if refund_bank_detail_data is not None:
+        bank_detail = getattr(applicant, "refund_bank_detail", None)
+        if bank_detail is None:
+            ApplicantRefundBankDetail.objects.create(
+                applicant=applicant,
+                **refund_bank_detail_data,
+            )
+        else:
+            for field, value in refund_bank_detail_data.items():
+                setattr(
+                    bank_detail,
+                    field,
+                    value,
+                )
+            bank_detail.save()
 
     return applicant
 
@@ -863,19 +897,10 @@ def create_payment(
         applicant,
     )
 
-    currency = currency.upper()
-
-    exchange_rate = get_exchange_rate(
-        from_currency=currency,
-        to_currency=DEFAULT_TARGET_CURRENCY,
-    )
-
-    currency_rate = CurrencyRate.objects.filter(
-        base_currency=currency.upper(),
-        target_currency=DEFAULT_TARGET_CURRENCY,
-    ).order_by(
-        "-fetched_at",
-    ).first()
+    try:
+        exchange_rate = get_exchange_rate(from_currency=currency.upper())
+    except Exception as e:
+        exchange_rate = Decimal("1.0000")
 
     euro_amount = (
         Decimal(amount)
@@ -886,14 +911,13 @@ def create_payment(
 
     payment = ApplicantPayment.objects.create(
         applicant=applicant,
-        currency_rate=currency_rate,
+        exchange_rate=exchange_rate,
         payment_number=payment_number,
         installment_type=installment_type,
         payment_date=payment_date,
         payment_method=payment_method,
-        currency=currency,
+        currency=currency.upper(),
         amount=amount,
-        exchange_rate=exchange_rate,
         euro_amount=euro_amount,
         receipt_number=receipt_number,
         reference=reference,
@@ -933,17 +957,12 @@ def update_payment(
 
     payment.currency = payment.currency.upper()
 
-    currency_rate = CurrencyRate.objects.filter(
-        base_currency=payment.currency.upper(),
-        target_currency=DEFAULT_TARGET_CURRENCY,
-    ).order_by(
-        "-fetched_at",
-    ).first()
+    try:
+        exchange_rate = get_exchange_rate(from_currency=payment.currency.upper())
+    except Exception:
+        exchange_rate = Decimal("1.0000")
 
-    payment.exchange_rate = get_exchange_rate(
-        from_currency=payment.currency,
-        to_currency=DEFAULT_TARGET_CURRENCY,
-    )
+    payment.exchange_rate = exchange_rate
 
     payment.euro_amount = (
         Decimal(payment.amount)

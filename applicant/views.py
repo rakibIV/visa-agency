@@ -29,7 +29,6 @@ from .filters import (
     ApplicantRefundReceiptFilter,
     ApplicantDocumentFilter,
     ApplicantNoteFilter,
-    CurrencyRateFilter,
 )
 from .models import (
     AgreementTemplate,
@@ -47,7 +46,6 @@ from .selectors import (
     get_applicant_by_id,
     get_applicants,
     get_documents,
-    get_currency_rates,
     get_money_receipts,
     get_notes,
     get_payments,
@@ -78,7 +76,6 @@ from .serializers import (
     ApplicantDocumentSerializer,
     ApplicantNoteSerializer,
     ApplicantStatusHistorySerializer,
-    CurrencyRateSerializer,
     ApplicantStatusEmailUpdateSerializer,
     ApplicantManualEmailSerializer,
     MailTriggerSerializer,
@@ -252,46 +249,7 @@ class AgreementTemplateClauseViewSet(ModelViewSet):
         return queryset
 
 
-# ==========================================================
-# Currency Rates
-# ==========================================================
 
-class CurrencyRateViewSet(ModelViewSet):
-
-    queryset = get_currency_rates()
-
-    serializer_class = CurrencyRateSerializer
-
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
-
-    filter_backends = [
-        DjangoFilterBackend,
-        SearchFilter,
-        OrderingFilter,
-    ]
-
-    filterset_class = CurrencyRateFilter
-
-    search_fields = [
-        "base_currency",
-        "target_currency",
-        "source",
-    ]
-
-    ordering_fields = [
-        "base_currency",
-        "target_currency",
-        "rate",
-        "fetched_at",
-        "created_at",
-    ]
-
-    ordering = [
-        "-fetched_at",
-        "base_currency",
-    ]
 
 
 # ==========================================================

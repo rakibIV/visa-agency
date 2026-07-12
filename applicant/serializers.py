@@ -20,7 +20,6 @@ from .models import (
     ApplicantRefundBankDetail,
     ApplicantRefundReceipt,
     ApplicantStatusHistory,
-    CurrencyRate,
     Applicant,
 )
 
@@ -127,7 +126,7 @@ class AgreementTemplateSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "code",
-            "agreement_type",
+            "sequence",
             "body",
             "version",
             "is_active",
@@ -213,30 +212,7 @@ class ApplicantManualEmailSerializer(serializers.Serializer):
     )
 
 
-# =========================================================
-# Currency Rates
-# =========================================================
 
-class CurrencyRateSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = CurrencyRate
-
-        fields = (
-            "id",
-            "base_currency",
-            "target_currency",
-            "rate",
-            "source",
-            "fetched_at",
-            "created_at",
-            "updated_at",
-        )
-
-        read_only_fields = fields
-
-
-# ==========================================================
 # Applicant Profile
 # ==========================================================
 
@@ -339,10 +315,7 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
 
     received_by_name = serializers.SerializerMethodField()
 
-    currency_rate_info = CurrencyRateSerializer(
-        source="currency_rate",
-        read_only=True,
-    )
+
 
     class Meta:
         model = ApplicantPayment
@@ -352,8 +325,6 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "applicant",
             "application_id",
             "applicant_name",
-            "currency_rate",
-            "currency_rate_info",
             "payment_number",
             "installment_type",
             "receipt_number",
@@ -373,7 +344,6 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
 
         read_only_fields = (
             "id",
-            "currency_rate",
             "payment_number",
             "exchange_rate",
             "euro_amount",
@@ -967,6 +937,8 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 
     assigned_staff = serializers.SerializerMethodField()
 
+    photo = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = Applicant
 
@@ -1028,6 +1000,8 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 class ApplicantSerializer(serializers.ModelSerializer):
 
     profile = ApplicantProfileSerializer(required=False)
+    refund_bank_detail = ApplicantRefundBankDetailSerializer(required=False)
+    photo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Applicant
@@ -1045,11 +1019,34 @@ class ApplicantSerializer(serializers.ModelSerializer):
             "updated_by",
         )
 
+    def to_internal_value(self, data):
+        import json
+        if hasattr(data, "dict"):
+            data = data.dict()
+        else:
+            data = data.copy()
+            
+        if "profile" in data and isinstance(data["profile"], str):
+            try:
+                data["profile"] = json.loads(data["profile"])
+            except ValueError:
+                pass
+                
+        if "refund_bank_detail" in data and isinstance(data["refund_bank_detail"], str):
+            try:
+                data["refund_bank_detail"] = json.loads(data["refund_bank_detail"])
+            except ValueError:
+                pass
+                
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         profile_data = validated_data.pop("profile", None)
+        refund_bank_detail_data = validated_data.pop("refund_bank_detail", None)
 
         return create_applicant(
             profile_data=profile_data,
+            refund_bank_detail_data=refund_bank_detail_data,
             **validated_data,
         )
 
@@ -1059,10 +1056,12 @@ class ApplicantSerializer(serializers.ModelSerializer):
         validated_data,
     ):
         profile_data = validated_data.pop("profile", None)
+        refund_bank_detail_data = validated_data.pop("refund_bank_detail", None)
 
         return update_applicant(
             applicant=instance,
             profile_data=profile_data,
+            refund_bank_detail_data=refund_bank_detail_data,
             **validated_data,
         )
 
@@ -1152,6 +1151,8 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
     assigned_staff_name = serializers.SerializerMethodField()
 
     assigned_staff = serializers.SerializerMethodField()
+
+    photo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Applicant

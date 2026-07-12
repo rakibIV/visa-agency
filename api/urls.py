@@ -20,6 +20,11 @@ from api.public_views import (
     PublicStaffProfileAccessAPIView,
 )
 
+from api.views import (
+    UserProfileAPIView,
+    UserPasswordUpdateAPIView,
+)
+
 # Consolidated Imports by App
 from agency.views import (
     AgencyServiceViewSet,
@@ -47,7 +52,6 @@ from applicant.views import (
     ApplicantTagViewSet,
     ApplicantViewSet,
     ApplicationStatusViewSet,
-    CurrencyRateViewSet,
 )
 from country.views import (
     CountryFAQViewSet,
@@ -106,7 +110,6 @@ router.register("application-statuses", ApplicationStatusViewSet, basename="appl
 router.register("applicant-tags", ApplicantTagViewSet, basename="applicant-tag")
 router.register("agreement-templates", AgreementTemplateViewSet, basename="agreement-template")
 router.register("applicants", ApplicantViewSet, basename="applicant")
-router.register("currency-rates", CurrencyRateViewSet, basename="currency-rate")
 
 
 # ==========================================
@@ -171,6 +174,8 @@ urlpatterns = [
     # JWT Authentication Endpoints
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/me/", UserProfileAPIView.as_view(), name="auth-me"),
+    path("auth/me/password/", UserPasswordUpdateAPIView.as_view(), name="auth-me-password"),
     path(
         "schema/",
         SpectacularAPIView.as_view(),

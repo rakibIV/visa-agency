@@ -1,4 +1,4 @@
-﻿from cloudinary.models import CloudinaryField
+from cloudinary.models import CloudinaryField
 from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
@@ -326,6 +326,17 @@ class CompanyInformation(BaseModel):
         max_length=30,
     )
 
+    email = models.EmailField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+
+    website = models.URLField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
 
     address = models.TextField()
 

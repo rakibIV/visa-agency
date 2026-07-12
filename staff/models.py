@@ -12,6 +12,8 @@ from core.models import BaseModel
 from core.validators import (
     image_extension_validator,
     validate_image_size,
+    validate_profile_image_dimensions,
+    validate_signature_dimensions,
 )
 
 
@@ -76,11 +78,13 @@ class Staff(BaseModel):
     photo = CloudinaryField('image', validators=[
         image_extension_validator,
         validate_image_size,
+        validate_profile_image_dimensions,
     ], blank=True, null=True)
 
     signature = CloudinaryField('image', validators=[
         image_extension_validator,
         validate_image_size,
+        validate_signature_dimensions,
     ], blank=True, null=True)
 
     phone = models.CharField(

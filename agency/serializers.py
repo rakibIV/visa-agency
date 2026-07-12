@@ -1,4 +1,4 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 
 from .models import (
     AgencyService,
@@ -171,6 +171,8 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
             "company_logo",
             "favicon",
             "phone",
+            "email",
+            "website",
             "address",
             "about",
             "mission",

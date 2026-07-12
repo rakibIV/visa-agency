@@ -3,6 +3,7 @@ import re
 
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
+from django.core.files.images import get_image_dimensions
 
 
 # -----------------------------
@@ -68,12 +69,27 @@ def validate_percentage(value):
 # Image Size
 # -----------------------------
 def validate_image_size(image):
-    max_size = 2 * 1024 * 1024  # 5 MB
+    max_size = 5 * 1024 * 1024  # 5 MB
 
     if image.size > max_size:
         raise ValidationError(
             "Image size cannot exceed 5 MB."
         )
+
+
+def validate_profile_image_dimensions(image):
+    dimensions = get_image_dimensions(image)
+    if dimensions:
+        width, height = dimensions
+        if width != 300 or height != 300:
+            raise ValidationError(f"Profile image must be exactly 300x300 pixels. Uploaded image is {width}x{height} pixels.")
+
+def validate_signature_dimensions(image):
+    dimensions = get_image_dimensions(image)
+    if dimensions:
+        width, height = dimensions
+        if width != 300 or height != 80:
+            raise ValidationError(f"Signature image must be exactly 300x80 pixels. Uploaded image is {width}x{height} pixels.")
 
 
 # -----------------------------
