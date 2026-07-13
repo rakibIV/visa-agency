@@ -29,7 +29,6 @@ from .serializers import (
     StaffDetailSerializer,
     StaffCreateUpdateSerializer,
     StaffMonthlySlotSerializer,
-    StaffPublicProfileSerializer,
     StaffDocumentSerializer,
     StaffEmergencyContactSerializer,
     SubStaffSerializer,
@@ -279,55 +278,7 @@ class SubStaffMonthlySlotViewSet(ModelViewSet):
         )
 
 
-class StaffPublicProfileViewSet(ModelViewSet):
-    serializer_class = StaffPublicProfileSerializer
 
-    permission_classes = [
-        IsAdminOrReadOnly,
-    ]
-
-    filter_backends = [
-        DjangoFilterBackend,
-        OrderingFilter,
-    ]
-
-    filterset_fields = [
-        "is_public",
-        "slug",
-    ]
-
-    ordering_fields = [
-        "slug",
-        "created_at",
-    ]
-
-    ordering = [
-        "slug",
-    ]
-
-    def get_queryset(self):
-        queryset = StaffPublicProfile.objects.select_related(
-            "staff",
-            "staff__user",
-            "staff__designation",
-            "staff__office",
-        )
-
-        staff_pk = self.kwargs.get(
-            "staff_pk",
-        )
-
-        if staff_pk:
-            queryset = queryset.filter(
-                staff_id=staff_pk,
-            )
-
-        return queryset
-
-    def perform_create(self, serializer):
-        serializer.save(
-            staff_id=self.kwargs.get("staff_pk"),
-        )
 
 
 class StaffDocumentViewSet(ModelViewSet):

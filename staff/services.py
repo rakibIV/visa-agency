@@ -41,11 +41,25 @@ def create_staff(
         ]
     )
 
+
+    public_slug = staff_data.pop("public_slug", None)
+    is_public = staff_data.pop("is_public", False)
+
     staff = Staff.objects.create(
         user=user,
         employee_id=employee_id,
         **staff_data,
     )
+
+    from .models import StaffPublicProfile
+    public_profile = StaffPublicProfile(
+        staff=staff,
+        is_public=is_public,
+    )
+    if public_slug:
+        public_profile.slug = public_slug
+
+    public_profile.save()
 
     return staff
 
@@ -75,6 +89,10 @@ def update_staff(
 
     user.save()
 
+
+    public_slug = staff_data.pop("public_slug", None)
+    is_public = staff_data.pop("is_public", None)
+
     for field, value in staff_data.items():
         setattr(
             staff,
@@ -83,6 +101,15 @@ def update_staff(
         )
 
     staff.save()
+
+    from .models import StaffPublicProfile
+    public_profile, created = StaffPublicProfile.objects.get_or_create(staff=staff)
+    if is_public is not None:
+        public_profile.is_public = is_public
+    if public_slug is not None:
+        public_profile.slug = public_slug
+
+    public_profile.save()
 
     if "is_active" in staff_data:
         user.is_active = staff.is_active

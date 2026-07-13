@@ -65,7 +65,6 @@ from staff.views import (
     StaffDocumentViewSet,
     StaffEmergencyContactViewSet,
     StaffMonthlySlotViewSet,
-    StaffPublicProfileViewSet,
     StaffViewSet,
     SubStaffMonthlySlotViewSet,
     SubStaffViewSet,
@@ -136,7 +135,6 @@ visa_router.register("seo", VisaSEOViewSet, basename="visa-seo")
 staff_router = NestedDefaultRouter(router, "staffs", lookup="staff")
 staff_router.register("monthly-slots", StaffMonthlySlotViewSet, basename="staff-monthly-slot")
 staff_router.register("sub-staffs", SubStaffViewSet, basename="staff-sub-staff")
-staff_router.register("public-profile", StaffPublicProfileViewSet, basename="staff-public-profile")
 staff_router.register("documents", StaffDocumentViewSet, basename="staff-document")
 staff_router.register("emergency-contacts", StaffEmergencyContactViewSet, basename="staff-emergency-contact")
 
@@ -208,7 +206,7 @@ urlpatterns = [
         name="public-current-month-staff-slots",
     ),
     path(
-        "public/staff-profiles/<slug:slug>/access/",
+        "public/staff-profiles/access/",
         PublicStaffProfileAccessAPIView.as_view(),
         name="public-staff-profile-access",
     ),

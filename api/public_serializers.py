@@ -207,6 +207,9 @@ class PublicStaffMonthlySlotSerializer(serializers.ModelSerializer):
 
 
 class PublicStaffProfileAccessSerializer(serializers.Serializer):
+    employee_id = serializers.CharField(
+        max_length=50,
+    )
     password = serializers.CharField(
         write_only=True,
         trim_whitespace=False,

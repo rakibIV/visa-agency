@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
+from django.shortcuts import get_object_or_404
 from rest_framework.viewsets import ModelViewSet
 
 from .filters import VisaFilter, VisaJobFilter
@@ -100,6 +101,26 @@ class VisaViewSet(ModelViewSet):
         "name",
     ]
 
+    lookup_field = "slug"
+    lookup_url_kwarg = "slug"
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs.get(lookup_url_kwarg)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        import uuid
+        from django.db.models import Q
+        try:
+            uuid_obj = uuid.UUID(lookup_value)
+            obj = get_object_or_404(queryset, Q(slug=lookup_value) | Q(pk=uuid_obj))
+        except ValueError:
+            obj = get_object_or_404(queryset, slug=lookup_value)
+            
+        self.check_object_permissions(self.request, obj)
+        return obj
+
     def get_serializer_class(self):
 
         if self.action == "retrieve":
@@ -115,7 +136,25 @@ class VisaViewSet(ModelViewSet):
         return VisaSerializer
 
 
-class VisaRequirementViewSet(ModelViewSet):
+class VisaNestedViewSetMixin:
+    def get_visa(self):
+        visa_value = self.kwargs.get("visa_slug") or self.kwargs.get("visa_pk")
+        if not visa_value:
+            raise ValueError("Visa identifier is missing from the nested URL")
+        
+        qs = Visa.objects.filter(slug=visa_value)
+        if qs.exists():
+            return qs.first()
+            
+        import uuid
+        try:
+            uuid_obj = uuid.UUID(visa_value)
+            return get_object_or_404(Visa, pk=uuid_obj)
+        except ValueError:
+            return get_object_or_404(Visa, slug=visa_value)
+
+
+class VisaRequirementViewSet(VisaNestedViewSetMixin, ModelViewSet):
     serializer_class = VisaRequirementSerializer
 
     permission_classes = [
@@ -124,7 +163,7 @@ class VisaRequirementViewSet(ModelViewSet):
 
     def get_queryset(self):
         return VisaRequirement.objects.filter(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         ).order_by(
             "display_order",
             "title",
@@ -132,11 +171,11 @@ class VisaRequirementViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
 
-class VisaStepViewSet(ModelViewSet):
+class VisaStepViewSet(VisaNestedViewSetMixin, ModelViewSet):
     serializer_class = VisaStepSerializer
 
     permission_classes = [
@@ -145,18 +184,18 @@ class VisaStepViewSet(ModelViewSet):
 
     def get_queryset(self):
         return VisaStep.objects.filter(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         ).order_by(
             "display_order",
         )
 
     def perform_create(self, serializer):
         serializer.save(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
 
-class VisaFAQViewSet(ModelViewSet):
+class VisaFAQViewSet(VisaNestedViewSetMixin, ModelViewSet):
     serializer_class = VisaFAQSerializer
 
     permission_classes = [
@@ -165,18 +204,18 @@ class VisaFAQViewSet(ModelViewSet):
 
     def get_queryset(self):
         return VisaFAQ.objects.filter(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         ).order_by(
             "display_order",
         )
 
     def perform_create(self, serializer):
         serializer.save(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
 
-class VisaSEOViewSet(ModelViewSet):
+class VisaSEOViewSet(VisaNestedViewSetMixin, ModelViewSet):
     serializer_class = VisaSEOSerializer
 
     permission_classes = [
@@ -185,16 +224,16 @@ class VisaSEOViewSet(ModelViewSet):
 
     def get_queryset(self):
         return VisaSEO.objects.filter(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
     def perform_create(self, serializer):
         serializer.save(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
 
-class VisaJobViewSet(ModelViewSet):
+class VisaJobViewSet(VisaNestedViewSetMixin, ModelViewSet):
     serializer_class = VisaJobSerializer
 
     permission_classes = [
@@ -227,14 +266,14 @@ class VisaJobViewSet(ModelViewSet):
 
     def get_queryset(self):
         return VisaJob.objects.filter(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         ).prefetch_related(
             "facilities",
         )
 
     def perform_create(self, serializer):
         serializer.save(
-            visa_id=self.kwargs.get("visa_pk"),
+            visa=self.get_visa(),
         )
 
 

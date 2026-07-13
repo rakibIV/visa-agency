@@ -1,5 +1,6 @@
-﻿from rest_framework import status
+from rest_framework import status
 from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -10,7 +11,7 @@ from applicant.selectors import (
 )
 from staff.selectors import (
     get_public_current_month_staff_slots,
-    get_public_staff_profile_by_slug,
+    get_public_staff_profile_by_credentials,
 )
 
 from .public_serializers import (
@@ -145,13 +146,14 @@ class PublicStaffProfileAccessAPIView(APIView):
             OpenApiExample(
                 "Profile access request",
                 value={
+                    "employee_id": "EMP-1001",
                     "password": "visitor-password",
                 },
                 request_only=True,
             ),
         ],
     )
-    def post(self, request, slug):
+    def post(self, request):
         serializer = PublicStaffProfileAccessSerializer(
             data=request.data,
         )
@@ -159,26 +161,20 @@ class PublicStaffProfileAccessAPIView(APIView):
             raise_exception=True,
         )
 
-        public_profile = get_public_staff_profile_by_slug(
-            slug,
+        public_profile = get_public_staff_profile_by_credentials(
+            serializer.validated_data["employee_id"],
         )
 
         if public_profile is None:
-            return Response(
-                {
-                    "detail": "No public staff profile was found."
-                },
-                status=status.HTTP_404_NOT_FOUND,
+            raise ValidationError(
+                {"detail": "Profile not found or not active."}
             )
 
-        if not public_profile.check_public_password(
-            serializer.validated_data["password"],
+        if not public_profile.staff.user.check_password(
+            serializer.validated_data["password"]
         ):
-            return Response(
-                {
-                    "detail": "Invalid public profile password."
-                },
-                status=status.HTTP_403_FORBIDDEN,
+            raise ValidationError(
+                {"detail": "Incorrect password."}
             )
 
         return Response(

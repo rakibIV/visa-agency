@@ -275,6 +275,15 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(required=False, allow_null=True)
     signature = serializers.ImageField(required=False, allow_null=True)
 
+
+    public_slug = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+    is_public = serializers.BooleanField(
+        required=False,
+    )
+
     class Meta:
         model = Staff
         fields = [
@@ -300,6 +309,8 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
             "joining_date",
             "reference_staff",
             "is_active",
+            "public_slug",
+            "is_public",
         ]
 
     def validate_email(self, value):
@@ -413,6 +424,15 @@ class StaffDetailSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(required=False, allow_null=True)
     signature = serializers.ImageField(required=False, allow_null=True)
 
+    public_slug = serializers.CharField(
+        source="public_profile.slug",
+        read_only=True,
+    )
+    is_public = serializers.BooleanField(
+        source="public_profile.is_public",
+        read_only=True,
+    )
+
     monthly_slots = StaffMonthlySlotSerializer(
         many=True,
         read_only=True,
@@ -455,6 +475,8 @@ class StaffDetailSerializer(serializers.ModelSerializer):
             "joining_date",
             "reference_staff",
             "is_active",
+            "public_slug",
+            "is_public",
             "monthly_slots",
             "sub_staffs",
             "documents",

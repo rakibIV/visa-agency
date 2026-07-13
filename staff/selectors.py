@@ -107,8 +107,6 @@ def get_public_current_month_staff_slots():
         StaffMonthlySlot.objects.filter(
             allocation_month=month_start,
             staff__is_active=True,
-            staff__public_profile__is_public=True,
-            staff__public_profile__public_password_hash__gt="",
         )
         .select_related(
             "staff",
@@ -133,12 +131,11 @@ def get_public_current_month_staff_slots():
     )
 
 
-def get_public_staff_profile_by_slug(slug):
+def get_public_staff_profile_by_credentials(employee_id):
     return (
         StaffPublicProfile.objects.filter(
-            slug=slug,
+            staff__employee_id=employee_id,
             is_public=True,
-            public_password_hash__gt="",
             staff__is_active=True,
         )
         .select_related(

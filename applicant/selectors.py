@@ -1,4 +1,4 @@
-from django.db.models import Count, Max, Prefetch, Q, Sum
+from django.db.models import Count, Max, Prefetch, Q, Sum, F
 from django.utils import timezone
 
 from .models import (
@@ -151,16 +151,9 @@ def get_public_current_month_applicant_results():
     return (
         Applicant.objects.filter(
             is_deleted=False,
-            status__slug__in=[
-                "approved",
-                "rejected",
-            ],
-            status_history__new_status__slug__in=[
-                "approved",
-                "rejected",
-            ],
-            status_history__created_at__date__gte=month_start,
-            status_history__created_at__date__lte=today,
+            status__slug__iregex=r"approved|rejected",
+            updated_at__date__gte=month_start,
+            updated_at__date__lte=today,
         )
         .select_related(
             "visa",
@@ -169,17 +162,7 @@ def get_public_current_month_applicant_results():
             "status",
         )
         .annotate(
-            result_date=Max(
-                "status_history__created_at",
-                filter=Q(
-                    status_history__new_status__slug__in=[
-                        "approved",
-                        "rejected",
-                    ],
-                    status_history__created_at__date__gte=month_start,
-                    status_history__created_at__date__lte=today,
-                ),
-            )
+            result_date=F("updated_at")
         )
         .order_by(
             "-result_date",
