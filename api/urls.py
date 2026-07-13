@@ -57,6 +57,7 @@ from country.views import (
     CountryFAQViewSet,
     CountryGalleryViewSet,
     CountryRequirementViewSet,
+    CountrySEOViewSet,
     CountryViewSet,
 )
 from staff.views import (
@@ -121,6 +122,7 @@ country_router = NestedDefaultRouter(router, "countries", lookup="country")
 country_router.register("requirements", CountryRequirementViewSet, basename="country-requirement")
 country_router.register("faqs", CountryFAQViewSet, basename="country-faq")
 country_router.register("gallery", CountryGalleryViewSet, basename="country-gallery")
+country_router.register("seo", CountrySEOViewSet, basename="country-seo")
 
 # Visa Nesting
 visa_router = NestedDefaultRouter(router, "visas", lookup="visa")

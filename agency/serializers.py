@@ -24,10 +24,13 @@ class AgencyServiceSerializer(serializers.ModelSerializer):
             "icon",
             "is_featured",
             "display_order",
+            "is_active",
         ]
 
 
 class NoticeSerializer(serializers.ModelSerializer):
+    attachment = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = Notice
         fields = [
@@ -91,7 +94,9 @@ class OfficeSerializer(serializers.ModelSerializer):
             "office_hours",
             "is_head_office",
             "display_order",
+            "is_active",
         ]
+        read_only_fields = ["company"]
 
 
 class SocialLinkSerializer(serializers.ModelSerializer):
@@ -110,7 +115,9 @@ class SocialLinkSerializer(serializers.ModelSerializer):
             "platform_name",
             "url",
             "display_order",
+            "is_active",
         ]
+        read_only_fields = ["company"]
 
 
 class EmailTemplateSerializer(serializers.ModelSerializer):

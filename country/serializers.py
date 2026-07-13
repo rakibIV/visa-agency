@@ -20,6 +20,7 @@ class CountryRequirementSerializer(serializers.ModelSerializer):
             "description",
             "display_order",
         ]
+        read_only_fields = ["country"]
 
 
 class CountryFAQSerializer(serializers.ModelSerializer):
@@ -32,6 +33,7 @@ class CountryFAQSerializer(serializers.ModelSerializer):
             "answer",
             "display_order",
         ]
+        read_only_fields = ["country"]
 
 
 class CountryGallerySerializer(serializers.ModelSerializer):
@@ -46,6 +48,7 @@ class CountryGallerySerializer(serializers.ModelSerializer):
             "caption",
             "display_order",
         ]
+        read_only_fields = ["country"]
 
 
 class CountrySEOSerializer(serializers.ModelSerializer):
@@ -58,10 +61,12 @@ class CountrySEOSerializer(serializers.ModelSerializer):
             "meta_keywords",
             "canonical_url",
         ]
+        read_only_fields = ["country"]
 
 
 class CountrySerializer(serializers.ModelSerializer):
     flag = serializers.ImageField(required=False, allow_null=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Country
@@ -70,12 +75,15 @@ class CountrySerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "flag",
+            "image",
             "is_featured",
             "currency",
             "language",
             "processing_time",
             "capital",
             "time_zone",
+            "short_description",
+            "is_active",
         ]
 
 

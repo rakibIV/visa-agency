@@ -127,9 +127,12 @@ class CountryRequirementViewSet(CountryNestedViewSetMixin, ModelViewSet):
 
 
 
-class CountrySEOViewSet(ModelViewSet):
-    queryset = CountrySEO.objects.all()
+class CountrySEOViewSet(CountryNestedViewSetMixin, ModelViewSet):
     serializer_class = CountrySEOSerializer
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['country']
+
+    def get_queryset(self):
+        return CountrySEO.objects.filter(country=self.get_country())
+
+    def perform_create(self, serializer):
+        serializer.save(country=self.get_country())

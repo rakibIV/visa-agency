@@ -84,7 +84,7 @@ class Notice(BaseModel):
         blank=True,
     )
 
-    attachment = CloudinaryField('raw', validators=[
+    attachment = CloudinaryField('raw', resource_type='raw', validators=[
         document_extension_validator,
         validate_document_size,
     ], blank=True, null=True, help_text="Optional notice attachment. Allowed: PDF, JPG, JPEG, PNG. Max size: 10 MB.")

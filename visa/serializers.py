@@ -28,6 +28,7 @@ class VisaCategorySerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "is_featured",
+            "is_active",
         ]
 
 

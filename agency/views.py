@@ -1,4 +1,4 @@
-﻿from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.viewsets import ModelViewSet
@@ -205,6 +205,10 @@ class OfficeViewSet(ModelViewSet):
         "branch_name",
     ]
 
+    def perform_create(self, serializer):
+        company = CompanyInformation.objects.first()
+        serializer.save(company=company)
+
 
 class SocialLinkViewSet(ModelViewSet):
     queryset = SocialLink.objects.all()
@@ -218,6 +222,10 @@ class SocialLinkViewSet(ModelViewSet):
     ordering = [
         "display_order",
     ]
+
+    def perform_create(self, serializer):
+        company = CompanyInformation.objects.first()
+        serializer.save(company=company)
 
 
 class EmailTemplateViewSet(ModelViewSet):

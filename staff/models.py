@@ -420,7 +420,7 @@ class StaffDocument(BaseModel):
         max_length=200,
     )
 
-    file = CloudinaryField('raw')
+    file = CloudinaryField('raw', resource_type='raw')
 
     display_order = models.PositiveIntegerField(
         default=0,

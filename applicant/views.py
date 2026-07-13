@@ -644,14 +644,16 @@ class ApplicantRefundBankDetailViewSet(ApplicantNestedViewSetMixin, ModelViewSet
 
         if bank_detail is None:
             return Response(
-                None,
+                [],
                 status=status.HTTP_200_OK,
             )
 
         return Response(
-            self.get_serializer(
-                bank_detail,
-            ).data,
+            [
+                self.get_serializer(
+                    bank_detail,
+                ).data
+            ],
             status=status.HTTP_200_OK,
         )
 

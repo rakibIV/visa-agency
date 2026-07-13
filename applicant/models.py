@@ -1544,7 +1544,7 @@ class ApplicantDocument(BaseModel):
         help_text="Required when document type is 'Other'.",
     )
 
-    file = CloudinaryField('raw', validators=[
+    file = CloudinaryField('raw', resource_type='raw', validators=[
         document_extension_validator,
         validate_document_size,
     ])
