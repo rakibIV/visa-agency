@@ -14,10 +14,12 @@ from rest_framework_simplejwt.views import (
 from api.swagger import apply_schema_overrides
 
 from api.public_views import (
+    PublicApplicationRequestCreateAPIView,
     PublicApplicantStatusCheckAPIView,
     PublicCurrentMonthApplicantResultListAPIView,
     PublicCurrentMonthStaffSlotListAPIView,
     PublicStaffProfileAccessAPIView,
+    PublicContactUsCreateAPIView,
 )
 
 from api.views import (
@@ -27,6 +29,7 @@ from api.views import (
 
 # Consolidated Imports by App
 from agency.views import (
+    ApplicationRequestViewSet,
     AgencyServiceViewSet,
     CompanyInformationViewSet,
     ContactUsViewSet,
@@ -96,6 +99,7 @@ router.register("lawyers", LawyerViewSet, basename="lawyer")
 router.register("notices", NoticeViewSet, basename="notice")
 router.register("reviews", ReviewViewSet, basename="review")
 router.register("contact-us", ContactUsViewSet, basename="contact-us")
+router.register("application-requests", ApplicationRequestViewSet, basename="application-request")
 
 # Visa Core
 router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")
@@ -171,6 +175,16 @@ job_router.register("facilities", JobFacilityViewSet, basename="job-facility")
 # 4. URLPATTERNS REGISTRATION
 # ==========================================
 urlpatterns = [
+    path(
+        "public/messages/",
+        PublicContactUsCreateAPIView.as_view(),
+        name="public-messages",
+    ),
+    path(
+        "public/application-requests/",
+        PublicApplicationRequestCreateAPIView.as_view(),
+        name="public-application-requests",
+    ),
     # JWT Authentication Endpoints
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

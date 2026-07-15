@@ -113,6 +113,7 @@ class StaffPublicProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = [
+            "staff",
             "id",
             "employee_id",
             "full_name",
@@ -167,6 +168,7 @@ class StaffPublicProfileSerializer(serializers.ModelSerializer):
 
 
 class StaffDocumentSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(required=False, allow_null=True)
     class Meta:
         model = StaffDocument
         fields = [

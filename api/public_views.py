@@ -1,3 +1,4 @@
+from rest_framework.generics import CreateAPIView
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
@@ -214,3 +215,18 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
             ).data,
             status=status.HTTP_200_OK,
         )
+
+
+from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny
+from .public_serializers import PublicApplicationRequestSerializer
+
+class PublicApplicationRequestCreateAPIView(CreateAPIView):
+    serializer_class = PublicApplicationRequestSerializer
+    permission_classes = [AllowAny]
+
+from .public_serializers import PublicContactUsSerializer
+
+class PublicContactUsCreateAPIView(CreateAPIView):
+    serializer_class = PublicContactUsSerializer
+    permission_classes = [AllowAny]

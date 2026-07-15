@@ -269,6 +269,7 @@ class ApplicantAddressSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
+            "applicant",
             "id",
         )
 
@@ -343,6 +344,7 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
+            "applicant",
             "id",
             "payment_number",
             "exchange_rate",
@@ -426,6 +428,10 @@ class ApplicantMoneyReceiptSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+        read_only_fields = [
+            "applicant",
+        ]
 
         read_only_fields = fields
 
@@ -579,6 +585,10 @@ class ApplicantRefundSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+        read_only_fields = [
+            "applicant",
+        ]
+
         read_only_fields = fields
 
 
@@ -690,6 +700,10 @@ class ApplicantRefundReceiptSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+        read_only_fields = [
+            "applicant",
+        ]
+
         read_only_fields = fields
 
     def get_generated_by_name(self, obj):
@@ -744,6 +758,7 @@ class GenerateRefundReceiptSerializer(serializers.Serializer):
 # ==========================================================
 
 class ApplicantDocumentSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(required=False, allow_null=True)
 
     applicant_name = serializers.CharField(
         source="applicant.full_name",
@@ -770,6 +785,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
+            "applicant",
             "id",
             "verified",
             "verified_by",
@@ -833,6 +849,7 @@ class ApplicantNoteSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
+            "applicant",
             "id",
             "created_at",
             "updated_at",
@@ -902,6 +919,7 @@ class ApplicantStatusHistorySerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
+            "applicant",
             "id",
             "created_at",
         )

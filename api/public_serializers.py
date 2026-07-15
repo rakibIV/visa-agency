@@ -257,6 +257,21 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
         current_total = current_month_slot.total_slot if current_month_slot else 0
         current_used = current_month_slot.used_slot if current_month_slot else 0
 
+        approved_count = Applicant.objects.filter(
+            slot__staff=staff,
+            status__name__icontains="approved"
+        ).count()
+
+        rejected_count = Applicant.objects.filter(
+            slot__staff=staff,
+            status__name__icontains="rejected"
+        ).count()
+
+        processing_count = Applicant.objects.filter(
+            slot__staff=staff,
+            status__name__icontains="processing"
+        ).count()
+
         return {
             "current_month": month_start,
             "current_month_total_slot": current_total,
@@ -267,6 +282,9 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             ),
             "lifetime_total_slot": lifetime["total_slot"] or 0,
             "lifetime_used_slot": lifetime["used_slot"] or 0,
+            "approved_visas": approved_count,
+            "rejected_visas": rejected_count,
+            "processing_visas": processing_count,
         }
 
     def get_sub_staffs(self, obj):
@@ -319,3 +337,24 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             )
 
         return value.url
+
+
+from agency.models import ApplicationRequest
+
+class PublicApplicationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationRequest
+        fields = [
+            "name",
+            "email",
+            "phone",
+            "message",
+            "target_visa",
+        ]
+
+from agency.models import ContactUs
+
+class PublicContactUsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactUs
+        fields = ['name', 'email', 'phone', 'subject', 'message']

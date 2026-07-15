@@ -444,3 +444,43 @@ class SocialLink(BaseModel):
         default=True,
     )
 
+
+
+class ApplicationRequest(BaseModel):
+    name = models.CharField(
+        max_length=150,
+    )
+
+    email = models.EmailField(
+        blank=True,
+        null=True,
+    )
+
+    phone = models.CharField(
+        max_length=30,
+    )
+
+    message = models.TextField(
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=50,
+        default="PENDING",
+        choices=[
+            ("PENDING", "Pending"),
+            ("REVIEWED", "Reviewed"),
+            ("CONTACTED", "Contacted"),
+        ]
+    )
+
+    target_visa = models.ForeignKey(
+        "visa.Visa",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="application_requests",
+    )
+
+    def __str__(self):
+        return f"{self.name} - {self.phone}"

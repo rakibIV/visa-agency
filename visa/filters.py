@@ -16,10 +16,15 @@ class VisaFilter(django_filters.FilterSet):
 
     from_any_country = django_filters.BooleanFilter()
 
+    country__slug = django_filters.CharFilter(
+        field_name="country__slug",
+    )
+
     class Meta:
         model = Visa
         fields = [
             "country",
+            "country__slug",
             "category",
             "is_featured",
             "from_any_country",

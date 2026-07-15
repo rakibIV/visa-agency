@@ -47,6 +47,10 @@ class VisaRequirementSerializer(serializers.ModelSerializer):
             "display_order",
         ]
 
+        read_only_fields = [
+            "visa",
+        ]
+
 
 class VisaStepSerializer(serializers.ModelSerializer):
 
@@ -59,6 +63,10 @@ class VisaStepSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "display_order",
+        ]
+
+        read_only_fields = [
+            "visa",
         ]
 
 
@@ -76,6 +84,10 @@ class VisaFAQSerializer(serializers.ModelSerializer):
             "is_active",
         ]
 
+        read_only_fields = [
+            "visa",
+        ]
+
 
 class VisaSEOSerializer(serializers.ModelSerializer):
 
@@ -91,6 +103,10 @@ class VisaSEOSerializer(serializers.ModelSerializer):
             "og_title",
             "og_description",
             "og_image",
+        ]
+
+        read_only_fields = [
+            "visa",
         ]
 
 
@@ -139,6 +155,10 @@ class VisaJobSerializer(serializers.ModelSerializer):
             "age_requirement",
             "facilities",
             "display_order",
+        ]
+
+        read_only_fields = [
+            "visa",
         ]
 
 

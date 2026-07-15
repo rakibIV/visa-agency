@@ -16,6 +16,7 @@ from .models import (
     Lawyer,
     Notice,
     Review,
+    ApplicationRequest,
 )
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -29,6 +30,7 @@ from .serializers import (
     LawyerSerializer,
     NoticeSerializer,
     ReviewSerializer,
+    ApplicationRequestSerializer,
 )
 
 
@@ -312,3 +314,13 @@ class LawyerViewSet(ModelViewSet):
         "name",
     ]
 
+
+
+class ApplicationRequestViewSet(ModelViewSet):
+    queryset = ApplicationRequest.objects.all().order_by('-created_at')
+    serializer_class = ApplicationRequestSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['status']
+    ordering_fields = ['created_at', 'status']
+    ordering = ['-created_at']
