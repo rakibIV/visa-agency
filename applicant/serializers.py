@@ -42,7 +42,10 @@ from .services import (
     upload_document,
 )
 
-
+from .emailing import (
+    send_applicant_email,
+    get_template_by_name,
+)
 # ==========================================================
 # Lookup Serializers
 # ==========================================================
@@ -196,6 +199,28 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
         default="",
     )
 
+    def validate_new_status(self, value):
+        applicant = self.context.get("applicant")
+        if not applicant:
+            return value
+            
+        if applicant.status == value:
+            return value
+            
+        if not applicant.payments.exists():
+            raise serializers.ValidationError(
+                "Status cannot be updated because the applicant has not made any payments."
+            )
+            
+        if value.slug == "payment-confirmed" or value.name.lower() == "payment confirmed":
+            from .services import is_payment_confirmed
+            if not is_payment_confirmed(applicant):
+                raise serializers.ValidationError(
+                    "Cannot update status to Payment Confirmed before all installments are paid."
+                )
+                
+        return value
+
 
 class ApplicantManualEmailSerializer(serializers.Serializer):
 
@@ -203,6 +228,8 @@ class ApplicantManualEmailSerializer(serializers.Serializer):
         queryset=Lawyer.objects.filter(
             is_active=True,
         ),
+        required=False,
+        allow_null=True,
     )
 
     template = serializers.PrimaryKeyRelatedField(
@@ -640,7 +667,7 @@ class GenerateRefundSerializer(serializers.Serializer):
             "user",
         )
 
-        return create_refund_for_rejected_applicant(
+        refund = create_refund_for_rejected_applicant(
             applicant,
             created_by=user if getattr(user, "is_authenticated", False) else None,
             reason=self.validated_data.get(
@@ -648,6 +675,27 @@ class GenerateRefundSerializer(serializers.Serializer):
                 "",
             ),
         )
+
+        if refund:
+            template = get_template_by_name("Refund Confirmation")
+            if template:
+                try:
+                    receipt_number = getattr(refund.receipts.first(), "receipt_number", f"REF-{refund.id}") if hasattr(refund, "receipts") else f"REF-{refund.id}"
+                    snapshot = refund.bank_detail_snapshot or {}
+                    
+                    send_applicant_email(
+                        applicant=applicant,
+                        template=template,
+                        refund_amount=str(refund.refund_amount),
+                        receipt_number=receipt_number,
+                        refund_method=refund.refund_method,
+                        refund_method_provider=snapshot.get("bank_name", ""),
+                    )
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Failed to send Refund Confirmation email: {e}")
+
+        return refund
 
 
 class ApplicantRefundReceiptSerializer(serializers.ModelSerializer):
@@ -1058,6 +1106,28 @@ class ApplicantSerializer(serializers.ModelSerializer):
                 
         return super().to_internal_value(data)
 
+    def validate_status(self, value):
+        applicant = self.instance
+        if not applicant:
+            return value
+            
+        if getattr(applicant, "status", None) == value:
+            return value
+            
+        if not getattr(applicant, "payments", None) or not applicant.payments.exists():
+            raise serializers.ValidationError(
+                "Status cannot be updated because the applicant has not made any payments."
+            )
+            
+        if value and (value.slug == "payment-confirmed" or value.name.lower() == "payment confirmed"):
+            from .services import is_payment_confirmed
+            if not is_payment_confirmed(applicant):
+                raise serializers.ValidationError(
+                    "Cannot update status to Payment Confirmed before all installments are paid."
+                )
+                
+        return value
+
     def create(self, validated_data):
         profile_data = validated_data.pop("profile", None)
         refund_bank_detail_data = validated_data.pop("refund_bank_detail", None)
@@ -1075,13 +1145,33 @@ class ApplicantSerializer(serializers.ModelSerializer):
     ):
         profile_data = validated_data.pop("profile", None)
         refund_bank_detail_data = validated_data.pop("refund_bank_detail", None)
+        new_status = validated_data.pop("status", None)
 
-        return update_applicant(
+        applicant = update_applicant(
             applicant=instance,
             profile_data=profile_data,
             refund_bank_detail_data=refund_bank_detail_data,
             **validated_data,
         )
+
+        if new_status is not None and new_status != instance.status:
+            from .services import change_applicant_status
+            request = self.context.get("request")
+            user = getattr(request, "user", None)
+            changed_by = getattr(user, "staff_profile", None) if user and getattr(user, "is_authenticated", False) else None
+            
+            # Use change_applicant_status to record history and send email
+            change_applicant_status(
+                applicant=applicant,
+                new_status=new_status,
+                changed_by=changed_by,
+                updated_by=user,
+                remarks="Status updated via Applicant Edit form.",
+                sender=getattr(applicant, "lawyer", None),
+                send_email=True,
+            )
+
+        return applicant
 
 
 # ==========================================================

@@ -91,6 +91,29 @@ def get_applicants():
     )
 
 
+def get_deleted_applicants():
+    return (
+        Applicant.objects.filter(
+            is_deleted=True,
+        )
+        .select_related(
+            "visa",
+            "job",
+            "status",
+            "slot",
+            "slot__staff",
+            "agreement",
+        )
+        .prefetch_related(
+            "tags",
+        )
+        .order_by(
+            "-deleted_at",
+            "-created_at",
+        )
+    )
+
+
 def get_applicant_by_id(pk):
     return (
         get_applicants()

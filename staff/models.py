@@ -135,6 +135,17 @@ class Staff(BaseModel):
         null=True,
     )
 
+    smtp_email = models.EmailField(
+        blank=True,
+        help_text="System default SMTP email (only applies if admin).",
+    )
+
+    smtp_password = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="System default SMTP password.",
+    )
+
     is_active = models.BooleanField(
         default=True,
     )

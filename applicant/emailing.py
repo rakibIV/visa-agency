@@ -26,7 +26,13 @@ def _normalize_env_key(env_key):
 
 
 def _resolve_sender_credentials(sender):
-    env_key = _normalize_env_key(sender.env_key)
+    smtp_email = getattr(sender, "smtp_email", None) or getattr(sender, "email", None)
+    smtp_password = getattr(sender, "smtp_password", None)
+    
+    if smtp_email and smtp_password:
+        return smtp_email, smtp_password
+
+    env_key = _normalize_env_key(getattr(sender, "env_key", ""))
 
     email = os.getenv(f"{env_key}_EMAIL")
     password = os.getenv(f"{env_key}_PASSWORD")
@@ -63,16 +69,30 @@ def build_email_context(
     *,
     applicant,
     staff_name="",
+    **extra_context
 ):
-    return {
+    from agency.models import CompanyInformation
+    company = CompanyInformation.objects.first()
+    company_name = company.company_name if company else "System Administrator"
+    company_logo = company.company_logo.url if company and company.company_logo else ""
+    company_tagline = company.tagline if company and hasattr(company, 'tagline') else ""
+    company_logo_display = "inline-block" if company_logo else "none"
+    
+    context = {
         "applicant_name": applicant.full_name,
         "applicant_id": applicant.application_id,
         "passport_number": applicant.passport_number,
         "visa": applicant.visa.name,
         "country": applicant.visa.country.name,
         "staff": staff_name or "",
-        "current_status": applicant.status.name,
+        "current_status": applicant.status.name if applicant.status else "",
+        "company_name": company_name,
+        "company_logo": company_logo,
+        "company_tagline": company_tagline,
+        "company_logo_display": company_logo_display,
     }
+    context.update(extra_context)
+    return context
 
 
 def get_template_for_status(status):
@@ -83,6 +103,16 @@ def get_template_for_status(status):
         )
         .select_related(
             "status",
+        )
+        .first()
+    )
+
+
+def get_template_by_name(name):
+    return (
+        EmailTemplate.objects.filter(
+            name__iexact=name,
+            is_active=True,
         )
         .first()
     )
@@ -137,9 +167,18 @@ def send_email_from_sender(
     message.reply_to = [
         sender.email,
     ]
+    message.content_subtype = "html"
 
-    return message.send(fail_silently=False)
-
+    result = message.send(fail_silently=False)
+    
+    print(f"\n=======================================================")
+    print(f"EMAIL SENT SUCCESSFULLY!")
+    print(f"Recipient: {recipient_email}")
+    print(f"Subject: {subject}")
+    print(f"From: {sender.email}")
+    print(f"=======================================================\n")
+    
+    return result
 
 @transaction.atomic
 def send_applicant_email(
@@ -148,6 +187,7 @@ def send_applicant_email(
     sender=None,
     template,
     staff_name="",
+    **extra_context
 ):
     if sender is None:
         sender = getattr(applicant, "lawyer", None)
@@ -166,13 +206,22 @@ def send_applicant_email(
         )
 
     if sender is None:
+        from staff.models import Staff
+        admin_staff = Staff.objects.filter(user__is_superuser=True).exclude(smtp_email="").first()
+
         class SystemSender:
-            def __init__(self):
-                self.env_key = os.getenv("SYSTEM_ENV_KEY", "SYSTEM")
-                self.name = os.getenv("SYSTEM_EMAIL_USERNAME", "System Administrator")
-                self.email = os.getenv(f"{self.env_key}_EMAIL")
+            def __init__(self, staff=None):
+                if staff:
+                    self.smtp_email = staff.smtp_email
+                    self.smtp_password = staff.smtp_password
+                    self.name = staff.user.get_full_name() or "System Administrator"
+                    self.email = staff.smtp_email
+                else:
+                    self.env_key = os.getenv("SYSTEM_ENV_KEY", "SYSTEM")
+                    self.name = os.getenv("SYSTEM_EMAIL_USERNAME", "System Administrator")
+                    self.email = os.getenv(f"{self.env_key}_EMAIL")
                 
-        sender = SystemSender()
+        sender = SystemSender(admin_staff)
 
         if not sender.email:
             raise ValidationError(
@@ -184,6 +233,7 @@ def send_applicant_email(
     context = build_email_context(
         applicant=applicant,
         staff_name=staff_name,
+        **extra_context
     )
 
     subject, body = render_email_template(

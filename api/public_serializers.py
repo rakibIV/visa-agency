@@ -65,6 +65,7 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
         fields = [
             "application_id",
             "full_name",
+            "photo",
             "visa",
             "job",
             "country",
@@ -135,6 +136,7 @@ class PublicApplicantResultSerializer(serializers.ModelSerializer):
         fields = [
             "application_id",
             "applicant_name",
+            "photo",
             "visa",
             "job",
             "country",
@@ -315,6 +317,7 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             "gender": staff.gender,
             "nationality": staff.nationality,
             "joining_date": staff.joining_date,
+            "reference_staff": staff.reference_staff.user.get_full_name() if staff.reference_staff else None,
         }
 
         return {

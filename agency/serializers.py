@@ -153,6 +153,7 @@ class LawyerSerializer(serializers.ModelSerializer):
             "name",
             "email",
             "env_key",
+            "smtp_password",
             "phone",
             "country",
             "country_name",

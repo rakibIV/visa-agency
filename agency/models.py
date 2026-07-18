@@ -196,7 +196,15 @@ class Lawyer(BaseModel):
     env_key = models.CharField(
         max_length=100,
         unique=True,
+        null=True,
+        blank=True,
         help_text="Reads credentials from <ENV_KEY>_EMAIL and <ENV_KEY>_PASSWORD.",
+    )
+
+    smtp_password = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Gmail SMTP App Password for sending emails.",
     )
 
     phone = models.CharField(
@@ -320,6 +328,11 @@ class CompanyInformation(BaseModel):
         image_extension_validator,
         validate_image_size,
     ], blank=True, null=True)
+
+    tagline = models.CharField(
+        max_length=255,
+        blank=True,
+    )
 
 
     phone = models.CharField(

@@ -14,10 +14,11 @@ from rest_framework.filters import (
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import ModelViewSet
+from django.utils import timezone
 from .filters import ApplicantFilter
 from .permissions import IsAdminOrReadOnly
 from django.shortcuts import render
-from core.choices import PaymentMethod
+from core.choices import PaymentMethod, RefundStatus
 
 from .filters import (
     AgreementTemplateFilter,
@@ -87,6 +88,7 @@ from .services import (
 from .emailing import (
     get_staff_display_name,
     send_applicant_email,
+    get_template_by_name,
 )
 
 
@@ -341,6 +343,34 @@ class ApplicantViewSet(ModelViewSet):
             else None,
         )
 
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.deleted_at = timezone.now()
+        instance.save()
+
+    @action(detail=False, methods=["get"])
+    def deleted(self, request):
+        from .selectors import get_deleted_applicants
+        queryset = get_deleted_applicants()
+        queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ApplicantListSerializer(page, many=True, context=self.get_serializer_context())
+            return self.get_paginated_response(serializer.data)
+        serializer = ApplicantListSerializer(queryset, many=True, context=self.get_serializer_context())
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def restore(self, request, pk=None):
+        from .models import Applicant
+        applicant = Applicant.objects.filter(pk=pk, is_deleted=True).first()
+        if not applicant:
+            raise Http404("Deleted applicant not found")
+        applicant.is_deleted = False
+        applicant.deleted_at = None
+        applicant.save()
+        return Response({"status": "restored"})
+
     @action(
         detail=False,
         methods=[
@@ -413,6 +443,7 @@ class ApplicantViewSet(ModelViewSet):
 
         serializer = ApplicantStatusEmailUpdateSerializer(
             data=request.data,
+            context={"applicant": applicant},
         )
         serializer.is_valid(
             raise_exception=True,
@@ -439,7 +470,7 @@ class ApplicantViewSet(ModelViewSet):
                 "",
             ),
             sender=validated_data.get("sender") or applicant.lawyer,
-            send_email=True,
+            send_email=validated_data.get("send_email", False),
         )
 
         return Response(
@@ -476,7 +507,7 @@ class ApplicantViewSet(ModelViewSet):
 
         send_manual_applicant_email(
             applicant=applicant,
-            sender=validated_data["sender"],
+            sender=validated_data.get("sender"),
             template=validated_data["template"],
             sent_by=request.user if request.user.is_authenticated else None,
         )
@@ -768,6 +799,39 @@ class ApplicantRefundViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
             ).data,
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=["post"], url_path="mark_as_paid")
+    def mark_as_paid(self, request, applicant_pk=None, pk=None):
+        refund = self.get_object()
+        
+        if refund.refund_status == RefundStatus.PAID:
+            return Response({"detail": "Refund is already marked as paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        refund.refund_status = RefundStatus.PAID
+        refund.save(update_fields=["refund_status", "updated_at"])
+
+        template = get_template_by_name("Refund Payment Sent")
+        if template:
+            try:
+                # Need to find the latest refund receipt for the receipt_number
+                receipt_number = getattr(refund.receipts.first(), "receipt_number", f"REF-{refund.id}") if hasattr(refund, "receipts") else f"REF-{refund.id}"
+                
+                # Method and provider from bank_detail_snapshot
+                snapshot = refund.bank_detail_snapshot or {}
+                
+                send_applicant_email(
+                    applicant=self.get_applicant(),
+                    template=template,
+                    refund_amount=str(refund.refund_amount),
+                    receipt_number=receipt_number,
+                    refund_method=refund.refund_method,
+                    refund_method_provider=snapshot.get("bank_name", ""),
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to send Refund Payment Sent email: {e}")
+
+        return Response(self.get_serializer(refund).data, status=status.HTTP_200_OK)
 
 
 class ApplicantRefundReceiptViewSet(ApplicantNestedViewSetMixin, ModelViewSet):

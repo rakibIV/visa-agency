@@ -237,6 +237,7 @@ class StaffSerializer(serializers.ModelSerializer):
             return None
 
         return {
+            "id": str(obj.reference_staff.id),
             "employee_id": obj.reference_staff.employee_id,
             "name": obj.reference_staff.user.get_full_name(),
         }
@@ -492,6 +493,7 @@ class StaffDetailSerializer(serializers.ModelSerializer):
             return None
 
         return {
+            "id": str(obj.reference_staff.id),
             "employee_id": obj.reference_staff.employee_id,
             "name": obj.reference_staff.user.get_full_name(),
         }

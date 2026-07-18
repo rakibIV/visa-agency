@@ -88,7 +88,7 @@ class SocialPlatform(models.TextChoices):
 class RequirementType(models.TextChoices):
     VISA = "VISA", "Visa Requirement"
     DOCUMENT = "DOCUMENT", "Document Requirement"
-
+    LANGUAGE_SKILL = "LANGUAGE_SKILL", "Language Skills"
 
 class VisaRequirementType(models.TextChoices):
     DOCUMENT = "DOCUMENT", "Document"
@@ -96,6 +96,7 @@ class VisaRequirementType(models.TextChoices):
     BENEFIT = "BENEFIT", "Benefit"
     RESTRICTION = "RESTRICTION", "Restriction"
     NOTE = "NOTE", "Important Note"
+    LANGUAGE_SKILL = "LANGUAGE_SKILL", "Language Skills"
 
 
 class MaritalStatus(models.TextChoices):

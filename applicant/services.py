@@ -480,7 +480,7 @@ def render_agreement_template_for_applicant(template, applicant):
             "id": str(template.id),
             "title": template.title,
             "code": template.code,
-            "agreement_type": template.agreement_type,
+            "sequence": template.sequence,
             "version": template.version,
         },
         "context": context,
@@ -525,7 +525,6 @@ def generate_applicant_agreement(
     agreement = ApplicantAgreement.objects.create(
         applicant=applicant,
         template=template,
-        agreement_type=template.agreement_type,
         language=language,
         title=rendered["rendered_content"][AgreementLanguage.ENGLISH]["title"],
         template_version=template.version,
@@ -596,7 +595,7 @@ def generate_default_applicant_agreements(
     for template in AgreementTemplate.objects.filter(
         is_active=True,
     ).order_by(
-        "agreement_type",
+        "sequence",
         "-version",
     ):
         agreements.append(
@@ -1114,6 +1113,13 @@ def create_refund_for_rejected_applicant(
         else RefundStatus.PENDING
     )
 
+    method_map = {
+        "BANK": PaymentMethod.BANK,
+        "MOBILE": PaymentMethod.MOBILE_BANKING,
+        "CASH": PaymentMethod.CASH,
+    }
+    refund_method = method_map.get(bank_snapshot.get("notes"), "")
+
     refund = ApplicantRefund.objects.create(
         applicant=applicant,
         refund_status=refund_status,
@@ -1121,6 +1127,7 @@ def create_refund_for_rejected_applicant(
         refundable_payment_total=breakdown["refundable_payment_total"],
         refund_amount=breakdown["refund_amount"],
         non_refundable_amount=breakdown["non_refundable_amount"],
+        refund_method=refund_method,
         refund_reason=reason,
         generated_from_rejection=True,
         bank_detail_snapshot=bank_snapshot,
@@ -1270,23 +1277,71 @@ def change_applicant_status(
     )
 
     if send_email:
-        if sender is None:
-            raise ValidationError(
-                {
-                    "sender": "Email sender is required when send_email is true."
-                }
-            )
 
         template = get_template_for_status(new_status)
 
         if template is None:
-            raise ValidationError(
-                {
-                    "status": (
-                        "No active email template is linked to this status."
-                    )
-                }
-            )
+            class FallbackTemplate:
+                subject = "Application Status Update: {{ current_status }}"
+                body = (
+                    "<!DOCTYPE html>"
+                    "<html>"
+                    "<head>"
+                    "<meta charset='utf-8'>"
+                    "<style>"
+                    "  body { font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #334155; margin: 0; padding: 0; }"
+                    "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }"
+                    "  .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px 30px; color: #ffffff; }"
+                    "  .header-logo { max-width: 55px; height: auto; border-radius: 6px; display: block; }"
+                    "  .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; text-align: left; }"
+                    "  .tagline { margin: 4px 0 0 0; font-size: 14px; font-weight: 400; opacity: 0.9; letter-spacing: 0.5px; text-align: left; }"
+                    "  .content { padding: 45px 40px; line-height: 1.7; font-size: 16px; }"
+                    "  .status-box { background: linear-gradient(to right, #eff6ff, #ffffff); border-left: 4px solid #3b82f6; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 20px 25px; margin: 30px 0; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }"
+                    "  .status-label { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 8px; }"
+                    "  .status-value { font-size: 20px; color: #0f172a; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #dbeafe; color: #1d4ed8; border-radius: 20px; }"
+                    "  .footer { background-color: #f1f5f9; padding: 25px; text-align: center; font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; }"
+                    "  .footer p { margin: 5px 0; }"
+                    "</style>"
+                    "</head>"
+                    "<body>"
+                    "  <div class='container'>"
+                    "    <div class='header'>"
+                    "      <table width='100%' cellpadding='0' cellspacing='0' border='0'>"
+                    "        <tr>"
+                    "          <td align='center'>"
+                    "            <table cellpadding='0' cellspacing='0' border='0' style='margin: 0 auto;'>"
+                    "              <tr>"
+                    "                <td valign='middle' style='padding-right: 15px; display: {{ company_logo_display }}'>"
+                    "                  <img src='{{ company_logo }}' alt='{{ company_name }}' class='header-logo' onerror='this.style.display=\"none\"' />"
+                    "                </td>"
+                    "                <td valign='middle' align='left'>"
+                    "                  <h1>{{ company_name }}</h1>"
+                    "                  <p class='tagline'>{{ company_tagline }}</p>"
+                    "                </td>"
+                    "              </tr>"
+                    "            </table>"
+                    "          </td>"
+                    "        </tr>"
+                    "      </table>"
+                    "    </div>"
+                    "    <div class='content'>"
+                    "      <p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
+                    "      <p>We are writing to inform you that there has been an update regarding your application (ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>).</p>"
+                    "      <div class='status-box'>"
+                    "        <span class='status-label'>New Application Status</span>"
+                    "        <p class='status-value'>{{ current_status }}</p>"
+                    "      </div>"
+                    "      <p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>"
+                    "      <p>Best regards,<br><strong style='color: #0f172a;'>The {{ company_name }} Team</strong></p>"
+                    "    </div>"
+                    "    <div class='footer'>"
+                    "      <p>&copy; 2024 {{ company_name }}. All rights reserved.</p>"
+                    "    </div>"
+                    "  </div>"
+                    "</body>"
+                    "</html>"
+                )
+            template = FallbackTemplate()
 
         send_applicant_email(
             applicant=applicant,
@@ -1297,13 +1352,7 @@ def change_applicant_status(
             ),
         )
 
-    if _is_rejected_status(new_status):
-        create_refund_for_rejected_applicant(
-            applicant,
-            created_by=updated_by
-            or getattr(changed_by, "user", None),
-            reason=remarks,
-        )
+
 
     return applicant
 

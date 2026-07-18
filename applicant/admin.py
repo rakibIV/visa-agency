@@ -377,6 +377,38 @@ class ApplicantAdmin(admin.ModelAdmin):
             obj,
         )
     
+    def save_model(self, request, obj, form, change):
+        if change:
+            old_obj = self.model.objects.get(pk=obj.pk)
+            if old_obj.status != obj.status:
+                from .services import change_applicant_status
+                
+                new_status = obj.status
+                obj.status = old_obj.status
+                
+                changed_by = getattr(
+                    request.user,
+                    "staff_profile",
+                    None,
+                ) if request.user.is_authenticated else None
+                
+                try:
+                    change_applicant_status(
+                        applicant=obj,
+                        new_status=new_status,
+                        changed_by=changed_by,
+                        updated_by=request.user,
+                        remarks="Status updated from Admin panel.",
+                        sender=getattr(obj, "lawyer", None),
+                        send_email=True,
+                    )
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Status update email error: {e}")
+                return
+
+        super().save_model(request, obj, form, change)
+    
 
 # ==========================================================
 # Applicant Address

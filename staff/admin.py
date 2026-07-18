@@ -161,6 +161,16 @@ class StaffAdmin(admin.ModelAdmin):
                 ),
             },
         ),
+        (
+            "SMTP Settings (System Default/Admin)",
+            {
+                "fields": (
+                    "smtp_email",
+                    "smtp_password",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     add_fieldsets = (
@@ -187,6 +197,8 @@ class StaffAdmin(admin.ModelAdmin):
                     "reference_staff",
                     "photo",
                     "signature",
+                    "smtp_email",
+                    "smtp_password",
                     "is_active",
                 ),
             },
