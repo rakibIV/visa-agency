@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-k#r_t)39iz#oh9io@^9w_!d7cw^3cxtz+0!pc%j!nw=3oc3#-v')
 
 #curencyFreaks API Key
-CURRENCY_FREAKS_API_KEY = '9dd60838f25843248421b75e23067a9f'
+CURRENCY_FREAKS_API_KEY = config('CURRENCY_FREAKS_API_KEY', default='')
 
 # Currency cache configuration
 CURRENCY_RATE_TARGET_CURRENCY = "EUR"
@@ -46,7 +46,7 @@ CSRF_TRUSTED_ORIGINS = config(
     cast=lambda value: [item.strip() for item in value.split(',') if item.strip()],
 )
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 # Application definition
 
@@ -60,7 +60,6 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     'django.contrib.staticfiles',
     'cloudinary_storage',
-    "debug_toolbar",
     "rest_framework",
     "drf_spectacular",
     'django_filters',
@@ -75,8 +74,10 @@ INSTALLED_APPS = [
     "agency",
 ]
 
+if DEBUG:
+    INSTALLED_APPS.insert(0, "debug_toolbar")
+
 MIDDLEWARE = [
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -87,6 +88,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = 'Visa_Web_Service.urls'
 
@@ -203,6 +207,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
+    "PAGE_SIZE": 20,
 }
 
 from datetime import timedelta
@@ -278,4 +284,20 @@ management, CMS content, country and visa management, and agency operations.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
+
+# Security headers for production
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    X_FRAME_OPTIONS = "DENY"
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

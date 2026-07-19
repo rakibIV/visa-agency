@@ -19,6 +19,8 @@ from .public_serializers import (
     PublicApplicantResultSerializer,
     PublicApplicantStatusCheckSerializer,
     PublicApplicantStatusSerializer,
+    PublicApplicationRequestSerializer,
+    PublicContactUsSerializer,
     PublicStaffMonthlySlotSerializer,
     PublicStaffProfileAccessSerializer,
     PublicStaffProfileSerializer,
@@ -217,15 +219,11 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
         )
 
 
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import AllowAny
-from .public_serializers import PublicApplicationRequestSerializer
 
 class PublicApplicationRequestCreateAPIView(CreateAPIView):
     serializer_class = PublicApplicationRequestSerializer
     permission_classes = [AllowAny]
 
-from .public_serializers import PublicContactUsSerializer
 
 class PublicContactUsCreateAPIView(CreateAPIView):
     serializer_class = PublicContactUsSerializer

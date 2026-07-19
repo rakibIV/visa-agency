@@ -3,9 +3,12 @@ from rest_framework.filters import (
     OrderingFilter,
     SearchFilter,
 )
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import serializers
-from django.db.models import F, Count
+from django.db.models import F, Count, Subquery, OuterRef, Sum
+from django.db.models.functions import Coalesce
 
 from .filters import StaffFilter
 from .models import (
@@ -120,6 +123,18 @@ class StaffViewSet(ModelViewSet):
 
         return StaffSerializer
 
+    @action(detail=True, methods=["get"], url_path="sub-staff-allocations")
+    def sub_staff_allocations(self, request, pk=None):
+        staff = self.get_object()
+        month = request.query_params.get("allocation_month")
+        qs = SubStaffMonthlySlot.objects.filter(sub_staff__parent_staff=staff)
+        
+        if month:
+            qs = qs.filter(allocation_month=month)
+            
+        serializer = SubStaffMonthlySlotSerializer(qs, many=True)
+        return Response(serializer.data)
+
 
 class StaffMonthlySlotViewSet(ModelViewSet):
     serializer_class = StaffMonthlySlotSerializer
@@ -147,12 +162,19 @@ class StaffMonthlySlotViewSet(ModelViewSet):
     ]
 
     def get_queryset(self):
+        sub_staff_allocated_sum = SubStaffMonthlySlot.objects.filter(
+            sub_staff__parent_staff_id=OuterRef("staff_id"),
+            allocation_month=OuterRef("allocation_month"),
+        ).values("allocation_month").annotate(
+            total_allocated=Sum("allocated_slot")
+        ).values("total_allocated")
+
         queryset = (
             StaffMonthlySlot.objects.select_related(
                 "staff",
             )
             .annotate(
-                remaining_slot=F("total_slot") - Count("applicants"),
+                remaining_slot=F("total_slot") - Count("applicants", distinct=True) - Coalesce(Subquery(sub_staff_allocated_sum), 0),
             )
             .order_by(
                 "-allocation_month",

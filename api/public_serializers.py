@@ -57,6 +57,7 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
     country = serializers.CharField(
         source="visa.country.name",
     )
+    photo = serializers.SerializerMethodField()
     assigned_staff = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
 
@@ -76,6 +77,11 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_photo(self, obj):
+        if not obj.photo:
+            return None
+        return obj.photo.url if hasattr(obj.photo, 'url') else None
 
     def get_assigned_staff(self, obj):
         staff = getattr(
@@ -116,6 +122,7 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
 
 class PublicApplicantResultSerializer(serializers.ModelSerializer):
     applicant_name = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
 
     status = serializers.CharField(
         source="status.name",
@@ -143,6 +150,11 @@ class PublicApplicantResultSerializer(serializers.ModelSerializer):
             "status",
             "result_date",
         ]
+
+    def get_photo(self, obj):
+        if not obj.photo:
+            return None
+        return obj.photo.url if hasattr(obj.photo, 'url') else None
 
     def get_applicant_name(self, obj):
         name = obj.full_name or ""
