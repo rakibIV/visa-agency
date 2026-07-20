@@ -1,13 +1,13 @@
 {
     "builds": [{
-      "src": "visa_web_service/wsgi.py",
+      "src": "Visa_Web_Service/wsgi.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb", "runtime": "python3.11.3" }
+      "config": { "maxLambdaSize": "15mb", "runtime": "python3.12" }
     }],
     "routes": [
       {
         "src": "/(.*)",
-        "dest": "visa_web_service/wsgi.py"
+        "dest": "Visa_Web_Service/wsgi.py"
       }
     ]
 }
