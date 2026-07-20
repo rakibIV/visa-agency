@@ -115,7 +115,7 @@ INTERNAL_IPS = [
     # ...
 ]
 
-WSGI_APPLICATION = 'Visa_Web_Service.wsgi.app'
+WSGI_APPLICATION = 'Visa_Web_Service.wsgi.application'
 
 
 # Database
