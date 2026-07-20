@@ -8,7 +8,7 @@ django-cloudinary-storage==0.3.0
 django-cors-headers==4.7.0
 django-debug-toolbar==7.0.0
 django-filter==25.2
-django-rest-framework-nested==0.0.1
+
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.4.0
 drf-nested-routers==0.95.0
