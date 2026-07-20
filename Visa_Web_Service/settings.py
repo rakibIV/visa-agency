@@ -48,6 +48,12 @@ CSRF_TRUSTED_ORIGINS = config(
 
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:5173,http://127.0.0.1:5173',
+    cast=lambda value: [item.strip() for item in value.split(',') if item.strip()],
+)
+
 # Application definition
 
 INSTALLED_APPS = [
