@@ -36,23 +36,26 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,0.0.0.0',
+    default='localhost,127.0.0.1,0.0.0.0,.vercel.app',
     cast=lambda value: [item.strip() for item in value.split(',') if item.strip()],
 )
 
-CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:8000,http://127.0.0.1:8000',
-    cast=lambda value: [item.strip() for item in value.split(',') if item.strip()],
-)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://visa-agency-frontend-iota.vercel.app',
+    'https://visa-agency-frontend-mi39.vercel.app'
+]
 
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:5173,http://127.0.0.1:5173',
-    cast=lambda value: [item.strip() for item in value.split(',') if item.strip()],
-)
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://visa-agency-frontend-iota.vercel.app',
+    'https://visa-agency-frontend-mi39.vercel.app'
+]
+
 
 # Application definition
 
