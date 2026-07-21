@@ -548,13 +548,8 @@ class ApplicantRefundBankDetailSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        validated_data.pop(
-            "applicant",
-            None,
-        )
-
+        validated_data.setdefault('applicant', instance.applicant)
         return create_or_update_applicant_refund_bank_detail(
-            applicant=instance.applicant,
             **validated_data,
         )
 
@@ -1330,3 +1325,16 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             return str(staff.id)
 
         return None
+
+
+class FakeLiveResultSerializer(serializers.ModelSerializer):
+    status_name = serializers.CharField(source='status.name', read_only=True)
+    visa_name = serializers.CharField(source='visa.name', read_only=True)
+    job_name = serializers.CharField(source='job.title', read_only=True)
+    country_name = serializers.CharField(source='country.name', read_only=True)
+    photo = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        from .models import FakeLiveResult
+        model = FakeLiveResult
+        fields = '__all__'

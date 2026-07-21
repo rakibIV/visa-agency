@@ -1621,3 +1621,57 @@ class ApplicantNote(BaseModel):
             f"{self.created_at:%Y-%m-%d %H:%M}"
         )
 
+
+class FakeLiveResult(BaseModel):
+    applicant_name = models.CharField(
+        max_length=200,
+    )
+    
+    application_id = models.CharField(
+        max_length=8,
+        db_index=True,
+    )
+    
+    passport_number = models.CharField(
+        max_length=20,
+    )
+    
+    email = models.EmailField()
+    
+    photo = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
+
+    visa = models.ForeignKey(
+        "visa.Visa",
+        on_delete=models.CASCADE,
+    )
+    
+    job = models.ForeignKey(
+        "visa.VisaJob",
+        on_delete=models.CASCADE,
+    )
+    
+    country = models.ForeignKey(
+        "country.Country",
+        on_delete=models.CASCADE,
+    )
+    
+    status = models.ForeignKey(
+        "applicant.ApplicationStatus",
+        on_delete=models.CASCADE,
+    )
+    
+    result_date = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    class Meta:
+        ordering = ["-result_date"]
+        verbose_name = "Fake Live Result"
+        verbose_name_plural = "Fake Live Results"
+
+    def __str__(self):
+        return f"{self.application_id} | {self.applicant_name} (Fake)"
+

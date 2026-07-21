@@ -108,11 +108,21 @@ class PublicCurrentMonthStaffSlotListAPIView(APIView):
         },
     )
     def get(self, request):
-        slots = get_public_current_month_staff_slots()
+        from django.utils import timezone
+        from django.db.models import Prefetch, Count
+        from staff.models import Staff, StaffMonthlySlot
+        
+        month_start = timezone.localdate().replace(day=1)
+        slots = StaffMonthlySlot.objects.filter(allocation_month=month_start).annotate(
+            used_slot_count=Count('applicants')
+        )
+        staff_qs = Staff.objects.filter(is_active=True).prefetch_related(
+            Prefetch('monthly_slots', queryset=slots, to_attr='current_month_slots')
+        )
 
         return Response(
             PublicStaffMonthlySlotSerializer(
-                slots,
+                staff_qs,
                 many=True,
                 context={
                     "request": request,
@@ -210,9 +220,27 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
     def get(self, request):
         applicants = get_public_current_month_applicant_results()
 
+        from applicant.models import FakeLiveResult
+        from django.utils import timezone
+        today = timezone.localdate()
+        start_date = today - timezone.timedelta(days=90)
+        
+        fake_results = FakeLiveResult.objects.filter(
+            result_date__date__gte=start_date,
+            result_date__date__lte=today,
+        ).select_related(
+            "visa",
+            "visa__country",
+            "job",
+            "status",
+        )
+
+        combined = list(applicants) + list(fake_results)
+        combined.sort(key=lambda x: getattr(x, "result_date", None) or getattr(x, "updated_at", None), reverse=True)
+
         return Response(
             PublicApplicantResultSerializer(
-                applicants,
+                combined,
                 many=True,
             ).data,
             status=status.HTTP_200_OK,

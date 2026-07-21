@@ -106,6 +106,8 @@ class ApplicationStatusViewSet(ModelViewSet):
         IsAdminOrReadOnly,
     ]
 
+    pagination_class = None
+
     filter_backends = [
         DjangoFilterBackend,
         SearchFilter,
@@ -1075,3 +1077,13 @@ class ApplicantStatusHistoryViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
         return get_status_history(
             self.get_applicant(),
         )
+
+from .serializers import FakeLiveResultSerializer
+class FakeLiveResultViewSet(ModelViewSet):
+    serializer_class = FakeLiveResultSerializer
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+    def get_queryset(self):
+        from .models import FakeLiveResult
+        return FakeLiveResult.objects.all().select_related("visa", "job", "country", "status")

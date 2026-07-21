@@ -165,17 +165,14 @@ class ContactUsViewSet(ModelViewSet):
 
 
 class CompanyInformationViewSet(ModelViewSet):
-    queryset = CompanyInformation.objects.all()
+    queryset = CompanyInformation.objects.all().order_by('-pk')
 
     permission_classes = [
         IsAdminOrReadOnly,
     ]
 
     def get_serializer_class(self):
-        if self.action == "retrieve":
-            return CompanyInformationDetailSerializer
-
-        return CompanyInformationSerializer
+        return CompanyInformationDetailSerializer
 
 
 class OfficeViewSet(ModelViewSet):
@@ -324,3 +321,13 @@ class ApplicationRequestViewSet(ModelViewSet):
     filterset_fields = ['status']
     ordering_fields = ['created_at', 'status']
     ordering = ['-created_at']
+
+from .serializers import AgencyImageSerializer
+class AgencyImageViewSet(ModelViewSet):
+    serializer_class = AgencyImageSerializer
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+    def get_queryset(self):
+        from .models import AgencyImage
+        return AgencyImage.objects.all()

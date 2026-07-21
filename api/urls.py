@@ -25,6 +25,7 @@ from api.public_views import (
 from api.views import (
     UserProfileAPIView,
     UserPasswordUpdateAPIView,
+    AdminNotificationCountAPIView,
 )
 
 # Consolidated Imports by App
@@ -39,6 +40,7 @@ from agency.views import (
     OfficeViewSet,
     ReviewViewSet,
     SocialLinkViewSet,
+    AgencyImageViewSet,
 )
 from applicant.views import (
     AgreementTemplateClauseViewSet,
@@ -55,6 +57,7 @@ from applicant.views import (
     ApplicantTagViewSet,
     ApplicantViewSet,
     ApplicationStatusViewSet,
+    FakeLiveResultViewSet,
 )
 from country.views import (
     CountryFAQViewSet,
@@ -114,7 +117,8 @@ router.register("application-statuses", ApplicationStatusViewSet, basename="appl
 router.register("applicant-tags", ApplicantTagViewSet, basename="applicant-tag")
 router.register("agreement-templates", AgreementTemplateViewSet, basename="agreement-template")
 router.register("applicants", ApplicantViewSet, basename="applicant")
-
+router.register("fake-live-results", FakeLiveResultViewSet, basename="fake-live-result")
+router.register("agency-images", AgencyImageViewSet, basename="agency-image")
 
 # ==========================================
 # 2. CHILD ROUTERS (Level 1 Nesting)
@@ -190,6 +194,7 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", UserProfileAPIView.as_view(), name="auth-me"),
     path("auth/me/password/", UserPasswordUpdateAPIView.as_view(), name="auth-me-password"),
+    path("admin-notifications/", AdminNotificationCountAPIView.as_view(), name="admin-notifications"),
     path(
         "schema/",
         SpectacularAPIView.as_view(),

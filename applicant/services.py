@@ -635,10 +635,8 @@ def _is_rejected_status(status):
     name_lower = getattr(status, "name", "").lower()
     slug_lower = getattr(status, "slug", "").lower()
     return (
-        "rejected" in name_lower
-        or "rejection" in name_lower
-        or "rejected" in slug_lower
-        or "rejection" in slug_lower
+        "reject" in name_lower
+        or "reject" in slug_lower
     )
 
 

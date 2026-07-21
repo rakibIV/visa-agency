@@ -497,3 +497,37 @@ class ApplicationRequest(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.phone}"
+
+
+class AgencyImage(BaseModel):
+    company = models.ForeignKey(
+        CompanyInformation,
+        on_delete=models.CASCADE,
+        related_name="images",
+    )
+    
+    image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ])
+    
+    caption = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+    
+    display_order = models.PositiveIntegerField(
+        default=0,
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = ["display_order", "-created_at"]
+        verbose_name = "Agency Image"
+        verbose_name_plural = "Agency Images"
+
+    def __str__(self):
+        return f"Image for {self.company.company_name}"

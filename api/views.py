@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
 from rest_framework.serializers import ModelSerializer
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
 
 User = get_user_model()
@@ -63,6 +64,21 @@ class UserProfileAPIView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class AdminNotificationCountAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from agency.models import ContactUs, ApplicationRequest
+        
+        unread_messages = ContactUs.objects.filter(is_read=False, is_active=True).count()
+        pending_requests = ApplicationRequest.objects.filter(status='PENDING').count()
+        
+        return Response({
+            "unread_messages": unread_messages,
+            "pending_requests": pending_requests
+        })
 
 class UserPasswordUpdateAPIView(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]

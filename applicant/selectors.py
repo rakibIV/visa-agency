@@ -167,15 +167,13 @@ def get_public_applicant_status(
 
 def get_public_current_month_applicant_results():
     today = timezone.localdate()
-    month_start = today.replace(
-        day=1,
-    )
+    start_date = today - timezone.timedelta(days=90)
 
     return (
         Applicant.objects.filter(
             is_deleted=False,
             status__slug__iregex=r"approved|rejected",
-            updated_at__date__gte=month_start,
+            updated_at__date__gte=start_date,
             updated_at__date__lte=today,
         )
         .select_related(
