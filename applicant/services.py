@@ -31,6 +31,7 @@ from core.choices import (
     AgreementLanguage,
     ClauseVisibilityMode,
     PaymentInstallmentType,
+    PaymentMethod,
     RefundStatus,
 )
 from .utils import generate_application_id

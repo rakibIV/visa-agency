@@ -164,7 +164,13 @@ class ContactUsViewSet(ModelViewSet):
     ]
 
 
-class CompanyInformationViewSet(ModelViewSet):
+from rest_framework import mixins
+from rest_framework.viewsets import GenericViewSet
+
+class CompanyInformationViewSet(mixins.ListModelMixin,
+                                mixins.RetrieveModelMixin,
+                                mixins.UpdateModelMixin,
+                                GenericViewSet):
     queryset = CompanyInformation.objects.all().order_by('-pk')
 
     permission_classes = [

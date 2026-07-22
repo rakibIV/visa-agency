@@ -902,10 +902,14 @@ class ApplicantRefundReceiptViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
         receipt = self.get_object()
         applicant = receipt.applicant
         
+        from agency.models import CompanyInformation
+        company = CompanyInformation.objects.first()
+        
         context = {
             "receipt": receipt,
             "applicant": applicant,
             "profile": getattr(applicant, "profile", None),
+            "company": company,
         }
         
         if receipt.refund_method == PaymentMethod.CHEQUE:

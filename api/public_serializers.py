@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from applicant.models import Applicant
 from staff.models import StaffMonthlySlot, StaffPublicProfile
+from applicant.models import ApplicantPayment, ApplicantRefund
 
 
 class PublicApplicantStatusCheckSerializer(serializers.Serializer):
@@ -41,6 +42,32 @@ class PublicApplicantStatusHistorySerializer(serializers.Serializer):
     )
 
 
+class PublicApplicantPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicantPayment
+        fields = [
+            "id",
+            "amount",
+            "installment_type",
+            "payment_method",
+            "receipt_number",
+            "payment_date",
+        ]
+
+
+class PublicApplicantRefundSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicantRefund
+        fields = [
+            "id",
+            "refund_amount",
+            "refund_reason",
+            "refund_status",
+            "refund_method",
+            "created_at",
+        ]
+
+
 class PublicApplicantStatusSerializer(serializers.ModelSerializer):
     status = serializers.CharField(
         source="status.name",
@@ -60,6 +87,8 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
     photo = serializers.SerializerMethodField()
     assigned_staff = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
+    payments = PublicApplicantPaymentSerializer(many=True, read_only=True)
+    refunds = PublicApplicantRefundSerializer(many=True, read_only=True)
 
     class Meta:
         model = Applicant
@@ -74,6 +103,8 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
             "status_color",
             "assigned_staff",
             "status_history",
+            "payments",
+            "refunds",
             "created_at",
             "updated_at",
         ]
