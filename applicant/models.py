@@ -382,10 +382,13 @@ class AgreementTemplateClause(BaseModel):
 
 class Applicant(SoftDeleteModel):
     application_id = models.CharField(
-        max_length=8,
+        max_length=50,
         unique=True,
-        editable=False,
+        null=True,
+        blank=True,
+        editable=True,
         db_index=True,
+        help_text="Optional custom application ID entered by admin.",
     )
 
     full_name = models.CharField(
@@ -578,8 +581,27 @@ class Applicant(SoftDeleteModel):
             ),
         ]
 
+    def clean(self):
+        super().clean()
+        if self.application_id:
+            self.application_id = self.application_id.strip()
+            if not self.application_id:
+                self.application_id = None
+        else:
+            self.application_id = None
+
+    def save(self, *args, **kwargs):
+        if self.application_id:
+            self.application_id = self.application_id.strip()
+            if not self.application_id:
+                self.application_id = None
+        else:
+            self.application_id = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.application_id} | {self.full_name}"
+        app_id = self.application_id or f"#{self.id}"
+        return f"{app_id} | {self.full_name}"
 
 
 class ApplicantAgreement(BaseModel):
@@ -712,7 +734,7 @@ class ApplicantProfile(BaseModel):
     )
 
     email = models.EmailField(
-        blank=True,
+        blank=False,
     )
 
     occupation = models.CharField(

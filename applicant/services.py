@@ -754,7 +754,13 @@ def create_applicant(
     Creates an applicant together with the profile and refund bank details.
     """
 
-    application_id = generate_application_id()
+    application_id = applicant_data.pop("application_id", None)
+    if application_id:
+        application_id = str(application_id).strip()
+        if not application_id:
+            application_id = None
+    else:
+        application_id = None
 
     applicant = Applicant.objects.create(
         application_id=application_id,

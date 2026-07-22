@@ -1060,6 +1060,7 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 
 class ApplicantSerializer(serializers.ModelSerializer):
 
+    application_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     profile = ApplicantProfileSerializer(required=False)
     refund_bank_detail = ApplicantRefundBankDetailSerializer(required=False)
     photo = serializers.ImageField(required=False, allow_null=True)
@@ -1075,7 +1076,6 @@ class ApplicantSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = (
-            "application_id",
             "created_by",
             "updated_by",
         )
