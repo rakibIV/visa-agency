@@ -457,6 +457,12 @@ class SocialLink(BaseModel):
         default=True,
     )
 
+    class Meta:
+        ordering = [
+            "display_order",
+            "id",
+        ]
+
 
 
 class ApplicationRequest(BaseModel):
