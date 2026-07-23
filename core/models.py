@@ -27,3 +27,17 @@ class SoftDeleteModel(BaseModel):
 
     class Meta:
         abstract = True
+
+
+class Currency(BaseModel):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=3, unique=True, help_text="ISO currency code (e.g. USD, EUR, BDT)")
+    symbol = models.CharField(max_length=10, blank=True, help_text="Currency symbol (e.g. $, €, ৳)")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name_plural = "Currencies"
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"

@@ -86,6 +86,8 @@ from visa.views import (
     VisaViewSet,
 )
 
+from core.views import CurrencyViewSet
+
 # ==========================================
 # 1. BASE ROUTER (Top-Level Endpoints)
 # ==========================================
@@ -103,6 +105,7 @@ router.register("notices", NoticeViewSet, basename="notice")
 router.register("reviews", ReviewViewSet, basename="review")
 router.register("contact-us", ContactUsViewSet, basename="contact-us")
 router.register("application-requests", ApplicationRequestViewSet, basename="application-request")
+router.register("currencies", CurrencyViewSet, basename="currency")
 
 # Visa Core
 router.register("visa-categories", VisaCategoryViewSet, basename="visa-category")

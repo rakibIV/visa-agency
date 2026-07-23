@@ -975,8 +975,6 @@ def update_payment(
         Decimal("0.01")
     )
 
-    payment.currency_rate = currency_rate
-
     payment.save()
 
     _sync_payment_status(

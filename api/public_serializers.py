@@ -9,7 +9,7 @@ from applicant.models import ApplicantPayment, ApplicantRefund
 
 class PublicApplicantStatusCheckSerializer(serializers.Serializer):
     application_id = serializers.CharField(
-        max_length=8,
+        max_length=50,
     )
     email = serializers.EmailField()
     phone = serializers.CharField(
@@ -17,14 +17,7 @@ class PublicApplicantStatusCheckSerializer(serializers.Serializer):
     )
 
     def validate_application_id(self, value):
-        value = value.strip().upper()
-
-        if len(value) != 8 or not value.startswith("ARG"):
-            raise serializers.ValidationError(
-                "Enter a valid application ID."
-            )
-
-        return value
+        return value.strip().upper()
 
     def validate_phone(self, value):
         return value.strip()
