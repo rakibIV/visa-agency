@@ -341,6 +341,12 @@ def default_public_staff_fields():
         "office",
         "phone",
         "whatsapp",
+        "father_name",
+        "passport_number",
+        "date_of_birth",
+        "joining_date",
+        "gender",
+        "nationality",
     ]
 
 

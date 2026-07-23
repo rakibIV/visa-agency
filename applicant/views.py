@@ -653,6 +653,7 @@ class ApplicantRefundBankDetailViewSet(ApplicantNestedViewSetMixin, ModelViewSet
         "post",
         "put",
         "patch",
+        "delete",
         "head",
         "options",
     ]
@@ -731,6 +732,7 @@ class ApplicantRefundViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
     http_method_names = [
         "get",
         "post",
+        "delete",
         "head",
         "options",
     ]
@@ -847,6 +849,7 @@ class ApplicantRefundReceiptViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
     http_method_names = [
         "get",
         "post",
+        "delete",
         "head",
         "options",
     ]

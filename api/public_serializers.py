@@ -182,9 +182,9 @@ class PublicApplicantResultSerializer(serializers.Serializer):
 
     def get_passport_number(self, obj):
         p_num = obj.passport_number or ""
-        if len(p_num) < 5:
-            return "*****"
-        return f"{p_num[:3]}***{p_num[-2:]}"
+        if len(p_num) < 6:
+            return f"{p_num[:3]}***" if len(p_num) >= 3 else "***"
+        return f"{p_num[:3]}***{p_num[-3:]}"
 
     def get_email(self, obj):
         if hasattr(obj, "profile"):
@@ -356,14 +356,19 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             "whatsapp": staff.whatsapp,
             "gender": staff.gender,
             "nationality": staff.nationality,
-            "joining_date": staff.joining_date,
+            "joining_date": str(staff.joining_date) if staff.joining_date else None,
+            "father_name": staff.father_name,
+            "passport_number": staff.passport_number,
+            "date_of_birth": str(staff.date_of_birth) if staff.date_of_birth else None,
             "reference_staff": staff.reference_staff.user.get_full_name() if staff.reference_staff else None,
         }
 
+        # Include requested or new public fields
+        extra_always_included = {"father_name", "passport_number", "date_of_birth", "joining_date", "gender", "nationality"}
         return {
-            field: values[field]
-            for field in fields
-            if field in values
+            k: v
+            for k, v in values.items()
+            if not fields or k in fields or k in extra_always_included
         }
 
     def _file_url(self, value):

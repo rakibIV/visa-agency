@@ -212,6 +212,12 @@ class Lawyer(BaseModel):
         blank=True,
     )
 
+    address = models.TextField(
+        blank=True,
+        default="",
+        help_text="Lawyer's office address.",
+    )
+
     country = models.ForeignKey(
         "country.Country",
         on_delete=models.SET_NULL,
@@ -286,11 +292,21 @@ Available Variables:
 
 {{ applicant_id }}
 
+{{ father_name }}
+
+{{ nid }}
+
 {{ passport_number }}
+
+{{ job }}
 
 {{ visa }}
 
 {{ country }}
+
+{{ lawyer_name }}
+
+{{ lawyer_address }}
 
 {{ staff }}
 
@@ -329,6 +345,11 @@ class CompanyInformation(BaseModel):
         validate_image_size,
     ], blank=True, null=True)
 
+    company_signature = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ], blank=True, null=True)
+
     tagline = models.CharField(
         max_length=255,
         blank=True,
@@ -337,6 +358,12 @@ class CompanyInformation(BaseModel):
 
     phone = models.CharField(
         max_length=30,
+    )
+
+    whatsapp = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
     )
 
     email = models.EmailField(

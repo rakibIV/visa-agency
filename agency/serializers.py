@@ -151,6 +151,7 @@ class LawyerSerializer(serializers.ModelSerializer):
             "env_key",
             "smtp_password",
             "phone",
+            "address",
             "country",
             "country_name",
             "is_default",
@@ -167,6 +168,10 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    company_signature = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = CompanyInformation
@@ -175,7 +180,9 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
             "company_name",
             "company_logo",
             "favicon",
+            "company_signature",
             "phone",
+            "whatsapp",
             "email",
             "website",
             "address",
@@ -212,7 +219,9 @@ class CompanyInformationDetailSerializer(serializers.ModelSerializer):
             "company_name",
             "company_logo",
             "favicon",
+            "company_signature",
             "phone",
+            "whatsapp",
             "address",
             "about",
             "mission",
@@ -357,6 +366,7 @@ class LawyerSerializer(serializers.ModelSerializer):
             "env_key",
             "smtp_password",
             "phone",
+            "address",
             "country",
             "country_name",
             "is_default",
