@@ -955,6 +955,12 @@ class ApplicantPayment(BaseModel):
         blank=True,
     )
 
+    important_note = models.TextField(
+        blank=True,
+        default="",
+        help_text="Important note printed on money receipt.",
+    )
+
     class Meta:
         ordering = [
             "payment_number",
@@ -1076,6 +1082,12 @@ class ApplicantMoneyReceipt(BaseModel):
 
     notes = models.TextField(
         blank=True,
+    )
+
+    important_note = models.TextField(
+        blank=True,
+        default="",
+        help_text="Important note printed on money receipt.",
     )
 
     generated_by = models.ForeignKey(

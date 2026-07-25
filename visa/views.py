@@ -292,4 +292,4 @@ class JobFacilityViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             job_id=self.kwargs.get("job_pk"),
-        )
+        )

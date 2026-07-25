@@ -10,6 +10,8 @@ from .models import (
     Notice,
     ContactUs,
     Review,
+    CompanyLogo,
+    ImportantNote,
 )
 
 
@@ -265,3 +267,44 @@ class LawyerAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+
+@admin.register(CompanyLogo)
+class CompanyLogoAdmin(admin.ModelAdmin):
+    list_display = (
+        "serial_number",
+        "title",
+        "company",
+        "is_active",
+        "created_at",
+    )
+    list_filter = (
+        "is_active",
+        "company",
+    )
+    search_fields = (
+        "title",
+    )
+    ordering = (
+        "serial_number",
+    )
+
+
+@admin.register(ImportantNote)
+class ImportantNoteAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "is_default",
+        "is_active",
+        "created_at",
+    )
+    list_filter = (
+        "is_default",
+        "is_active",
+    )
+    search_fields = (
+        "title",
+        "content",
+    )
+
+

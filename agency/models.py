@@ -355,6 +355,12 @@ class CompanyInformation(BaseModel):
         blank=True,
     )
 
+    money_receipt_important_note = models.TextField(
+        blank=True,
+        default="If the Visa Application has been officially submitted but the visa is not approved, and the candidate's overseas assignment is not completed within timeframe, refund shall be processed as per signed agreement clauses upon written request.",
+        help_text="Default important note printed on money receipts.",
+    )
+
 
     phone = models.CharField(
         max_length=30,
@@ -564,3 +570,72 @@ class AgencyImage(BaseModel):
 
     def __str__(self):
         return f"Image for {self.company.company_name}"
+
+
+class CompanyLogo(BaseModel):
+    company = models.ForeignKey(
+        CompanyInformation,
+        on_delete=models.CASCADE,
+        related_name="logos",
+    )
+    
+    title = models.CharField(
+        max_length=200,
+        help_text="Title or variation name of the logo (e.g. Primary Header Logo, Reverse Dark Logo, Monochrome Logo)",
+    )
+    
+    serial_number = models.PositiveIntegerField(
+        default=1,
+        help_text="Serial number / order for display sorting",
+    )
+
+    image = CloudinaryField('image', validators=[
+        image_extension_validator,
+        validate_image_size,
+    ])
+    
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = ["serial_number", "-created_at"]
+        verbose_name = "Company Logo"
+        verbose_name_plural = "Company Logos"
+
+    def __str__(self):
+        return f"SL {self.serial_number}: {self.title} - {self.company.company_name}"
+
+
+class ImportantNote(BaseModel):
+    company = models.ForeignKey(
+        CompanyInformation,
+        on_delete=models.CASCADE,
+        related_name="important_notes",
+        null=True,
+        blank=True,
+    )
+    title = models.CharField(
+        max_length=255,
+        help_text="Title / preset name for the note (e.g. Standard Refund Policy, Tourist Visa Terms)",
+    )
+    content = models.TextField(
+        help_text="Full text of the important note.",
+    )
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Set as default important note for new payments",
+    )
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = ["-is_default", "title"]
+        verbose_name = "Important Note"
+        verbose_name_plural = "Important Notes"
+
+    def __str__(self):
+        return f"{self.title}"
+
+

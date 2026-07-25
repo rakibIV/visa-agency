@@ -328,7 +328,8 @@ class ApplicationRequestViewSet(ModelViewSet):
     ordering_fields = ['created_at', 'status']
     ordering = ['-created_at']
 
-from .serializers import AgencyImageSerializer
+from .serializers import AgencyImageSerializer, CompanyLogoSerializer, ImportantNoteSerializer
+
 class AgencyImageViewSet(ModelViewSet):
     serializer_class = AgencyImageSerializer
     permission_classes = [
@@ -337,3 +338,35 @@ class AgencyImageViewSet(ModelViewSet):
     def get_queryset(self):
         from .models import AgencyImage
         return AgencyImage.objects.all()
+
+
+class CompanyLogoViewSet(ModelViewSet):
+    serializer_class = CompanyLogoSerializer
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+    filter_backends = [OrderingFilter, SearchFilter]
+    search_fields = ["title"]
+    ordering_fields = ["serial_number", "created_at"]
+    ordering = ["serial_number", "created_at"]
+
+    def get_queryset(self):
+        from .models import CompanyLogo
+        return CompanyLogo.objects.all().select_related("company")
+
+
+class ImportantNoteViewSet(ModelViewSet):
+    serializer_class = ImportantNoteSerializer
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+    filter_backends = [OrderingFilter, SearchFilter]
+    search_fields = ["title", "content"]
+    ordering_fields = ["is_default", "title", "created_at"]
+    ordering = ["-is_default", "title"]
+
+    def get_queryset(self):
+        from .models import ImportantNote
+        return ImportantNote.objects.all()
+
+

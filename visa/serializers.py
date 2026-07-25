@@ -124,6 +124,10 @@ class JobFacilitySerializer(serializers.ModelSerializer):
 
 
 class VisaJobSerializer(serializers.ModelSerializer):
+    visa_name = serializers.CharField(
+        source="visa.name",
+        read_only=True,
+    )
 
     facilities = JobFacilitySerializer(
         many=True,
@@ -136,6 +140,7 @@ class VisaJobSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "visa",
+            "visa_name",
             "title",
             "description",
             "minimum_salary",

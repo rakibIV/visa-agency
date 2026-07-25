@@ -274,42 +274,48 @@ def send_email_from_sender(
     subject,
     body,
 ):
-    sender_email, sender_password = _resolve_sender_credentials(sender)
+    try:
+        sender_email, sender_password = _resolve_sender_credentials(sender)
 
-    connection = get_connection(
-        backend="django.core.mail.backends.smtp.EmailBackend",
-        host="smtp.gmail.com",
-        port=587,
-        username=sender_email,
-        password=sender_password,
-        use_tls=True,
-        fail_silently=False,
-    )
+        connection = get_connection(
+            backend="django.core.mail.backends.smtp.EmailBackend",
+            host="smtp.gmail.com",
+            port=587,
+            username=sender_email,
+            password=sender_password,
+            use_tls=True,
+            fail_silently=False,
+        )
 
-    message = EmailMessage(
-        subject=subject,
-        body=body,
-        from_email=sender.email,
-        to=[
-            recipient_email,
-        ],
-        connection=connection,
-    )
-    message.reply_to = [
-        sender.email,
-    ]
-    message.content_subtype = "html"
+        message = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=sender.email,
+            to=[
+                recipient_email,
+            ],
+            connection=connection,
+        )
+        message.reply_to = [
+            sender.email,
+        ]
+        message.content_subtype = "html"
 
-    result = message.send(fail_silently=False)
-    
-    print(f"\n=======================================================")
-    print(f"EMAIL SENT SUCCESSFULLY!")
-    print(f"Recipient: {recipient_email}")
-    print(f"Subject: {subject}")
-    print(f"From: {sender.email}")
-    print(f"=======================================================\n")
-    
-    return result
+        result = message.send(fail_silently=False)
+        
+        print(f"\n=======================================================")
+        print(f"EMAIL SENT SUCCESSFULLY!")
+        print(f"Recipient: {recipient_email}")
+        print(f"Subject: {subject}")
+        print(f"From: {sender.email}")
+        print(f"=======================================================\n")
+        
+        return result
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to send email to {recipient_email}: {exc}")
+        return 0
+
 
 @transaction.atomic
 def send_applicant_email(
@@ -330,36 +336,43 @@ def send_applicant_email(
     )
 
     if not recipient_email:
-        raise ValidationError(
-            {
-                "applicant": "Applicant email address is missing."
-            }
-        )
+        import logging
+        logging.getLogger(__name__).warning(f"Applicant {getattr(applicant, 'id', None)} has no email address. Skipping email notification.")
+        return None
 
     if sender is None:
         from staff.models import Staff
+        from agency.models import CompanyInformation
+
         admin_staff = Staff.objects.filter(user__is_superuser=True).exclude(smtp_email="").first()
 
         class SystemSender:
             def __init__(self, staff=None):
-                if staff:
+                if staff and getattr(staff, "smtp_email", None):
                     self.smtp_email = staff.smtp_email
-                    self.smtp_password = staff.smtp_password
+                    self.smtp_password = getattr(staff, "smtp_password", "")
                     self.name = staff.user.get_full_name() or "System Administrator"
                     self.email = staff.smtp_email
                 else:
                     self.env_key = os.getenv("SYSTEM_ENV_KEY", "SYSTEM")
                     self.name = os.getenv("SYSTEM_EMAIL_USERNAME", "System Administrator")
                     self.email = os.getenv(f"{self.env_key}_EMAIL")
-                
+                    self.smtp_email = self.email
+                    self.smtp_password = os.getenv(f"{self.env_key}_PASSWORD")
+
+                    if not self.email:
+                        comp = CompanyInformation.objects.first()
+                        if comp and getattr(comp, "email", None):
+                            self.email = comp.email
+                            self.smtp_email = comp.email
+                            self.name = comp.company_name
+
         sender = SystemSender(admin_staff)
 
-        if not sender.email:
-            raise ValidationError(
-                {
-                    "sender": "No lawyer assigned and system fallback email is not configured."
-                }
-            )
+        if not getattr(sender, "email", None):
+            import logging
+            logging.getLogger(__name__).warning("No lawyer assigned and system fallback email is not configured. Skipping email notification.")
+            return None
 
     context = build_email_context(
         applicant=applicant,
@@ -382,7 +395,7 @@ def send_applicant_email(
 
     return {
         "recipient_email": recipient_email,
-        "sender_email": sender.email,
+        "sender_email": getattr(sender, "email", ""),
         "subject": subject,
         "body": body,
     }

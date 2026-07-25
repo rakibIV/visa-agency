@@ -181,6 +181,7 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
             "company_logo",
             "favicon",
             "company_signature",
+            "money_receipt_important_note",
             "phone",
             "whatsapp",
             "email",
@@ -475,3 +476,46 @@ class AgencyImageSerializer(serializers.ModelSerializer):
         from .models import AgencyImage
         model = AgencyImage
         fields = '__all__'
+
+
+class CompanyLogoSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=True)
+    company_name = serializers.CharField(source="company.company_name", read_only=True)
+
+    class Meta:
+        from .models import CompanyLogo
+        model = CompanyLogo
+        fields = [
+            "id",
+            "company",
+            "company_name",
+            "title",
+            "serial_number",
+            "image",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ImportantNoteSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source="company.company_name", read_only=True)
+
+    class Meta:
+        from .models import ImportantNote
+        model = ImportantNote
+        fields = [
+            "id",
+            "company",
+            "company_name",
+            "title",
+            "content",
+            "is_default",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+

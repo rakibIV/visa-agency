@@ -41,6 +41,8 @@ from agency.views import (
     ReviewViewSet,
     SocialLinkViewSet,
     AgencyImageViewSet,
+    CompanyLogoViewSet,
+    ImportantNoteViewSet,
 )
 from applicant.views import (
     AgreementTemplateClauseViewSet,
@@ -122,6 +124,8 @@ router.register("agreement-templates", AgreementTemplateViewSet, basename="agree
 router.register("applicants", ApplicantViewSet, basename="applicant")
 router.register("fake-live-results", FakeLiveResultViewSet, basename="fake-live-result")
 router.register("agency-images", AgencyImageViewSet, basename="agency-image")
+router.register("company-logos", CompanyLogoViewSet, basename="company-logo")
+router.register("important-notes", ImportantNoteViewSet, basename="important-note")
 
 # ==========================================
 # 2. CHILD ROUTERS (Level 1 Nesting)

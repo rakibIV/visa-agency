@@ -887,6 +887,7 @@ def create_payment(
     receipt_number="",
     reference="",
     note="",
+    important_note="",
     generated_by=None,
 ):
     """
@@ -927,6 +928,7 @@ def create_payment(
         reference=reference,
         received_by=received_by,
         note=note,
+        important_note=important_note,
     )
 
     generate_money_receipt_for_payment(
@@ -1042,6 +1044,7 @@ def generate_money_receipt_for_payment(
             payment,
         ),
         notes=payment.note,
+        important_note=payment.important_note,
         generated_by=generated_by,
     )
 
@@ -1280,34 +1283,35 @@ def change_applicant_status(
     )
 
     if send_email:
+        try:
+            template = get_template_for_status(new_status)
 
-        template = get_template_for_status(new_status)
+            if template is None:
+                class FallbackTemplate:
+                    subject = "Application Status Update: {{ current_status }}"
+                    body = (
+                        "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
+                        "<p>We are writing to inform you that there has been an update regarding your application (ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>).</p>"
+                        "<div class='status-box'>"
+                        "  <span class='status-label'>New Application Status</span>"
+                        "  <p class='status-value'>{{ current_status }}</p>"
+                        "</div>"
+                        "<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>"
+                        "<p>Best regards,<br><strong style='color: #0f172a;'>The {{ company_name }} Team</strong></p>"
+                    )
+                template = FallbackTemplate()
 
-        if template is None:
-            class FallbackTemplate:
-                subject = "Application Status Update: {{ current_status }}"
-                body = (
-                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
-                    "<p>We are writing to inform you that there has been an update regarding your application (ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>).</p>"
-                    "<div class='status-box'>"
-                    "  <span class='status-label'>New Application Status</span>"
-                    "  <p class='status-value'>{{ current_status }}</p>"
-                    "</div>"
-                    "<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>"
-                    "<p>Best regards,<br><strong style='color: #0f172a;'>The {{ company_name }} Team</strong></p>"
-                )
-            template = FallbackTemplate()
-
-        send_applicant_email(
-            applicant=applicant,
-            sender=sender,
-            template=template,
-            staff_name=get_staff_display_name(
-                changed_by.user if changed_by else None
-            ),
-        )
-
-
+            send_applicant_email(
+                applicant=applicant,
+                sender=sender,
+                template=template,
+                staff_name=get_staff_display_name(
+                    changed_by.user if changed_by else None
+                ),
+            )
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(f"Status update succeeded for applicant {getattr(applicant, 'id', None)}, but email failed: {exc}")
 
     return applicant
 

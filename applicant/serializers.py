@@ -4,6 +4,7 @@ from agency.models import (
     Lawyer,
     EmailTemplate as AgencyEmailTemplate,
 )
+from country.serializers import CountrySerializer
 
 from .models import (
     AgreementTemplate,
@@ -199,6 +200,12 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
         default="",
     )
 
+    def to_internal_value(self, data):
+        if isinstance(data, dict) and "status" in data and "new_status" not in data:
+            data = data.copy()
+            data["new_status"] = data["status"]
+        return super().to_internal_value(data)
+
     def validate_new_status(self, value):
         applicant = self.context.get("applicant")
         if not applicant:
@@ -366,6 +373,7 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "received_by",
             "received_by_name",
             "note",
+            "important_note",
             "created_at",
             "updated_at",
         )
@@ -447,6 +455,7 @@ class ApplicantMoneyReceiptSerializer(serializers.ModelSerializer):
             "payment_snapshot",
             "summary_text",
             "notes",
+            "important_note",
             "generated_by",
             "generated_by_name",
             "generated_at",
@@ -1236,6 +1245,11 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    country = CountrySerializer(
+        source="visa.country",
+        read_only=True,
+    )
+
     visa_name = serializers.CharField(
         source="visa.name",
         read_only=True,
@@ -1272,6 +1286,7 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "place_of_birth",
             "current_country",
+            "country",
             "payment_plan_installments",
             "visa",
             "visa_name",
