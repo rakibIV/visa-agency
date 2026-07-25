@@ -993,6 +993,11 @@ class ApplicantListSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    job_name = serializers.CharField(
+        source="job.title",
+        read_only=True,
+    )
+
     secondary_job_name = serializers.CharField(
         source="secondary_job.title",
         read_only=True,
@@ -1021,6 +1026,7 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "visa",
             "visa_name",
             "job",
+            "job_name",
             "secondary_job",
             "secondary_job_name",
             "status",
@@ -1255,6 +1261,11 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    job_name = serializers.CharField(
+        source="job.title",
+        read_only=True,
+    )
+
     secondary_job_name = serializers.CharField(
         source="secondary_job.title",
         read_only=True,
@@ -1291,6 +1302,7 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "visa",
             "visa_name",
             "job",
+            "job_name",
             "secondary_job",
             "secondary_job_name",
             "status",

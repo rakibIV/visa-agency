@@ -648,7 +648,7 @@ def get_applicant_payment_summary(applicant):
 def get_refundable_payment_total(applicant):
     return sum(
         (
-            payment.euro_amount
+            payment.amount
             for payment in applicant.payments.filter(
                 installment_type__in=[
                     PaymentInstallmentType.SECOND,
@@ -1095,6 +1095,13 @@ def create_refund_for_rejected_applicant(
     ).first()
 
     if existing:
+        if existing.refund_status in [RefundStatus.PENDING, RefundStatus.BANK_INFO_MISSING]:
+            breakdown = calculate_refund_breakdown(applicant)
+            if breakdown["refundable_payment_total"] > Decimal("0.00"):
+                existing.refundable_payment_total = breakdown["refundable_payment_total"]
+                existing.refund_amount = breakdown["refund_amount"]
+                existing.non_refundable_amount = breakdown["non_refundable_amount"]
+                existing.save(update_fields=["refundable_payment_total", "refund_amount", "non_refundable_amount", "updated_at"])
         return existing
 
     breakdown = calculate_refund_breakdown(
