@@ -143,8 +143,14 @@ class ContactUsViewSet(ModelViewSet):
     ]
 
     filter_backends = [
+        DjangoFilterBackend,
         SearchFilter,
         OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "is_read",
+        "is_active",
     ]
 
     search_fields = [
@@ -172,6 +178,7 @@ class CompanyInformationViewSet(mixins.ListModelMixin,
                                 mixins.UpdateModelMixin,
                                 GenericViewSet):
     queryset = CompanyInformation.objects.all().order_by('-pk')
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     permission_classes = [
         IsAdminOrReadOnly,

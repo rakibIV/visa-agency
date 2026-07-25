@@ -181,6 +181,7 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
             "company_logo",
             "favicon",
             "company_signature",
+            "tagline",
             "money_receipt_important_note",
             "phone",
             "whatsapp",
@@ -195,6 +196,18 @@ class CompanyInformationSerializer(serializers.ModelSerializer):
 
 
 class CompanyInformationDetailSerializer(serializers.ModelSerializer):
+    company_logo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+    favicon = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+    company_signature = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
 
     branches = OfficeSerializer(
         many=True,
@@ -207,11 +220,15 @@ class CompanyInformationDetailSerializer(serializers.ModelSerializer):
     )
 
     images = serializers.SerializerMethodField()
+    logos = serializers.SerializerMethodField()
 
     def get_images(self, obj):
         from .serializers import AgencyImageSerializer
         return AgencyImageSerializer(obj.images.all(), many=True, context=self.context).data
 
+    def get_logos(self, obj):
+        from .serializers import CompanyLogoSerializer
+        return CompanyLogoSerializer(obj.logos.filter(is_active=True).order_by('serial_number'), many=True, context=self.context).data
 
     class Meta:
         model = CompanyInformation
@@ -221,18 +238,25 @@ class CompanyInformationDetailSerializer(serializers.ModelSerializer):
             "company_logo",
             "favicon",
             "company_signature",
+            "tagline",
+            "money_receipt_important_note",
             "phone",
             "whatsapp",
+            "email",
+            "website",
             "address",
             "about",
             "mission",
             "vision",
+            "is_active",
             "branches",
             "social_links",
             "images",
+            "logos",
             "created_at",
             "updated_at",
         ]
+
 
 
 
@@ -374,72 +398,6 @@ class LawyerSerializer(serializers.ModelSerializer):
             "is_active",
         ]
 
-
-class CompanyInformationSerializer(serializers.ModelSerializer):
-    company_logo = serializers.ImageField(
-        required=False,
-        allow_null=True,
-    )
-    favicon = serializers.ImageField(
-        required=False,
-        allow_null=True,
-    )
-
-    class Meta:
-        model = CompanyInformation
-        fields = [
-            "id",
-            "company_name",
-            "company_logo",
-            "favicon",
-            "phone",
-            "email",
-            "website",
-            "address",
-            "about",
-            "mission",
-            "vision",
-            "is_active",
-        ]
-
-
-class CompanyInformationDetailSerializer(serializers.ModelSerializer):
-
-    branches = OfficeSerializer(
-        many=True,
-        read_only=True,
-    )
-
-    social_links = SocialLinkSerializer(
-        many=True,
-        read_only=True,
-    )
-
-    images = serializers.SerializerMethodField()
-
-    def get_images(self, obj):
-        from .serializers import AgencyImageSerializer
-        return AgencyImageSerializer(obj.images.all(), many=True, context=self.context).data
-
-
-    class Meta:
-        model = CompanyInformation
-        fields = [
-            "id",
-            "company_name",
-            "company_logo",
-            "favicon",
-            "phone",
-            "address",
-            "about",
-            "mission",
-            "vision",
-            "branches",
-            "social_links",
-            "images",
-            "created_at",
-            "updated_at",
-        ]
 
 
 

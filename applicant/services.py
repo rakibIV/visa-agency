@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 from .currency import (
     DEFAULT_TARGET_CURRENCY,
     get_exchange_rate,
+    get_fallback_exchange_rate,
 )
 from .emailing import (
     get_staff_display_name,
@@ -904,11 +905,11 @@ def create_payment(
 
     try:
         exchange_rate = get_exchange_rate(from_currency=currency.upper())
-    except Exception as e:
-        exchange_rate = Decimal("1.0000")
+    except Exception:
+        exchange_rate = get_fallback_exchange_rate(currency.upper())
 
     euro_amount = (
-        Decimal(amount)
+        Decimal(str(amount))
         * exchange_rate
     ).quantize(
         Decimal("0.01")
@@ -951,7 +952,7 @@ def update_payment(
 ):
     """
     Updates an existing payment.
-    Re-fetches exchange rate if currency changes.
+    Re-fetches live exchange rate and recalculates euro amount.
     """
 
     for field, value in payment_data.items():
@@ -964,14 +965,17 @@ def update_payment(
     payment.currency = payment.currency.upper()
 
     try:
-        exchange_rate = get_exchange_rate(from_currency=payment.currency.upper())
+        exchange_rate = get_exchange_rate(from_currency=payment.currency)
     except Exception:
-        exchange_rate = Decimal("1.0000")
+        if getattr(payment, "exchange_rate", None) and payment.exchange_rate > 0 and payment.currency != "EUR":
+            exchange_rate = payment.exchange_rate
+        else:
+            exchange_rate = get_fallback_exchange_rate(payment.currency)
 
     payment.exchange_rate = exchange_rate
 
     payment.euro_amount = (
-        Decimal(payment.amount)
+        Decimal(str(payment.amount))
         * payment.exchange_rate
     ).quantize(
         Decimal("0.01")
@@ -1557,3 +1561,54 @@ def delete_note(
     """
 
     applicant_note.delete()
+
+
+@transaction.atomic
+def reset_applicant(
+    *,
+    applicant,
+    reset_by=None,
+    remarks="Applicant reset after rejection.",
+):
+    """
+    Resets a rejected applicant by deleting all associated payments,
+    money receipts, refunds, refund receipts, refund bank details, and agreements.
+    Resets applicant status to the initial default status and clears agreement.
+    """
+    from .selectors import get_default_application_status, get_application_statuses
+
+    # 1. Delete money receipts and payments
+    ApplicantMoneyReceipt.objects.filter(applicant=applicant).delete()
+    ApplicantPayment.objects.filter(applicant=applicant).delete()
+
+    # 2. Delete refund receipts, refunds, and refund bank details
+    ApplicantRefundReceipt.objects.filter(applicant=applicant).delete()
+    ApplicantRefund.objects.filter(applicant=applicant).delete()
+    ApplicantRefundBankDetail.objects.filter(applicant=applicant).delete()
+
+    # 3. Delete agreements
+    ApplicantAgreement.objects.filter(applicant=applicant).delete()
+
+    # 4. Find initial status
+    initial_status = get_default_application_status()
+    if not initial_status:
+        initial_status = get_application_statuses().first()
+
+    old_status = applicant.status
+    applicant.status = initial_status
+    applicant.agreement = None
+    applicant.save(update_fields=["status", "agreement", "updated_at"])
+
+    # 5. Record status history
+    changed_by_profile = getattr(reset_by, "staff_profile", None) if reset_by and hasattr(reset_by, "staff_profile") else None
+
+    ApplicantStatusHistory.objects.create(
+        applicant=applicant,
+        old_status=old_status,
+        new_status=initial_status,
+        changed_by=changed_by_profile,
+        remarks=remarks or "Applicant reset after rejection.",
+    )
+
+    return applicant
+

@@ -140,17 +140,18 @@ def get_public_applicant_status(
     email,
     phone,
 ):
-    return (
-        Applicant.objects.filter(
-            is_deleted=False,
-            application_id=application_id.upper(),
-            profile__email__iexact=email.strip(),
-            profile__phone=phone.strip(),
-        )
+    app_id = application_id.strip()
+    clean_email = email.strip()
+    clean_phone = phone.strip()
+    phone_digits = "".join(filter(str.isdigit, clean_phone))
+
+    queryset = (
+        Applicant.objects.filter(is_deleted=False)
         .select_related(
             "visa",
             "visa__country",
             "job",
+            "secondary_job",
             "status",
             "profile",
             "slot",
@@ -161,8 +162,35 @@ def get_public_applicant_status(
         .prefetch_related(
             "status_history__new_status",
         )
-        .first()
     )
+
+    # 1. Direct match on app_id, email (case-insensitive), and phone
+    applicant = queryset.filter(
+        application_id__iexact=app_id,
+        profile__email__iexact=clean_email,
+        profile__phone=clean_phone,
+    ).first()
+
+    if applicant:
+        return applicant
+
+    # 2. Flexible match handling phone formatting variations (e.g. +880 vs 0)
+    if phone_digits:
+        phone_suffix = phone_digits[-10:] if len(phone_digits) >= 10 else phone_digits
+        applicant = queryset.filter(
+            application_id__iexact=app_id,
+            profile__email__iexact=clean_email,
+            profile__phone__icontains=phone_suffix,
+        ).first()
+
+        if applicant:
+            return applicant
+
+    # 3. Fallback match on app_id and email
+    return queryset.filter(
+        application_id__iexact=app_id,
+        profile__email__iexact=clean_email,
+    ).first()
 
 
 def get_public_current_month_applicant_results():

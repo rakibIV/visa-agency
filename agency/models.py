@@ -9,6 +9,7 @@ from core.validators import (
     image_extension_validator,
     validate_document_size,
     validate_image_size,
+    validate_signature_dimensions,
 )
 
 from core.choices import SocialPlatform
@@ -348,6 +349,7 @@ class CompanyInformation(BaseModel):
     company_signature = CloudinaryField('image', validators=[
         image_extension_validator,
         validate_image_size,
+        validate_signature_dimensions,
     ], blank=True, null=True)
 
     tagline = models.CharField(

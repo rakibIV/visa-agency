@@ -41,10 +41,15 @@ class PublicApplicantPaymentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "amount",
+            "currency",
+            "euro_amount",
+            "exchange_rate",
             "installment_type",
             "payment_method",
             "receipt_number",
             "payment_date",
+            "important_note",
+            "note",
         ]
 
 
@@ -57,6 +62,7 @@ class PublicApplicantRefundSerializer(serializers.ModelSerializer):
             "refund_reason",
             "refund_status",
             "refund_method",
+            "receipt_number",
             "created_at",
         ]
 
@@ -64,21 +70,28 @@ class PublicApplicantRefundSerializer(serializers.ModelSerializer):
 class PublicApplicantStatusSerializer(serializers.ModelSerializer):
     status = serializers.CharField(
         source="status.name",
+        default="",
     )
     status_color = serializers.CharField(
         source="status.color",
+        default="",
     )
     visa = serializers.CharField(
         source="visa.name",
+        default="",
     )
-    job = serializers.CharField(
-        source="job.title",
-    )
+    job = serializers.SerializerMethodField()
+    secondary_job = serializers.SerializerMethodField()
     country = serializers.CharField(
         source="visa.country.name",
+        default="",
     )
     photo = serializers.SerializerMethodField()
-    assigned_staff = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    father_name = serializers.SerializerMethodField()
+    mother_name = serializers.SerializerMethodField()
+    nationality = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
     payments = PublicApplicantPaymentSerializer(many=True, read_only=True)
     refunds = PublicApplicantRefundSerializer(many=True, read_only=True)
@@ -88,13 +101,23 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
         fields = [
             "application_id",
             "full_name",
+            "passport_number",
+            "date_of_birth",
+            "nid_number",
+            "place_of_birth",
+            "current_country",
+            "phone",
+            "email",
+            "father_name",
+            "mother_name",
+            "nationality",
             "photo",
             "visa",
             "job",
+            "secondary_job",
             "country",
             "status",
             "status_color",
-            "assigned_staff",
             "status_history",
             "payments",
             "refunds",
@@ -102,34 +125,40 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_job(self, obj):
+        if not getattr(obj, "job", None):
+            return None
+        return getattr(obj.job, "title", None) or str(obj.job)
+
+    def get_secondary_job(self, obj):
+        if not getattr(obj, "secondary_job", None):
+            return None
+        return getattr(obj.secondary_job, "title", None) or str(obj.secondary_job)
+
+    def get_phone(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.phone if profile and profile.phone else None
+
+    def get_email(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.email if profile and profile.email else None
+
+    def get_father_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.father_name if profile and profile.father_name else None
+
+    def get_mother_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.mother_name if profile and profile.mother_name else None
+
+    def get_nationality(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.nationality if profile and profile.nationality else None
+
     def get_photo(self, obj):
         if not obj.photo:
             return None
         return obj.photo.url if hasattr(obj.photo, 'url') else None
-
-    def get_assigned_staff(self, obj):
-        staff = getattr(
-            getattr(obj, "slot", None),
-            "staff",
-            None,
-        )
-
-        if not staff:
-            return None
-
-        public_profile = getattr(
-            staff,
-            "public_profile",
-            None,
-        )
-
-        return {
-            "name": staff.user.get_full_name(),
-            "designation": getattr(staff.designation, "name", ""),
-            "public_slug": public_profile.slug
-            if public_profile and public_profile.is_public
-            else None,
-        }
 
     def get_status_history(self, obj):
         histories = obj.status_history.select_related(

@@ -58,6 +58,29 @@ def _fetch_rate_from_api(from_currency, to_currency):
     exchange_rate = (to_rate / from_rate).quantize(Decimal("0.0001"))
     return exchange_rate
 
+FALLBACK_RATES = {
+    "BDT": Decimal("0.0077"),
+    "USD": Decimal("0.9200"),
+    "GBP": Decimal("1.1800"),
+    "EUR": Decimal("1.0000"),
+    "INR": Decimal("0.0110"),
+    "AED": Decimal("0.2500"),
+    "SAR": Decimal("0.2450"),
+    "MYR": Decimal("0.2000"),
+    "SGD": Decimal("0.6900"),
+    "CAD": Decimal("0.6800"),
+    "AUD": Decimal("0.6100"),
+}
+
+
+def get_fallback_exchange_rate(currency_code):
+    """
+    Returns reasonable fallback exchange rate against EUR when external API is unreachable.
+    """
+    code = (currency_code or "").strip().upper()
+    return FALLBACK_RATES.get(code, Decimal("0.0077") if code == "BDT" else Decimal("1.0000"))
+
+
 def get_exchange_rate(from_currency, to_currency=DEFAULT_TARGET_CURRENCY, **kwargs):
     """
     Fetches and returns the real-time exchange rate directly from the API.

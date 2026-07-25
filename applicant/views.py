@@ -133,6 +133,23 @@ class ApplicationStatusViewSet(ModelViewSet):
         "name",
     ]
 
+    @action(detail=False, methods=["post"], url_path="reorder")
+    def reorder(self, request):
+        order_ids = request.data.get("order", [])
+        if not isinstance(order_ids, list):
+            return Response(
+                {"detail": "Expected 'order' to be a list of status IDs."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for index, status_id in enumerate(order_ids, start=1):
+            ApplicationStatus.objects.filter(pk=status_id).update(display_order=index)
+
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 
 # ==========================================================
 # Applicant Tag
@@ -481,6 +498,28 @@ class ApplicantViewSet(ModelViewSet):
             ).data,
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=["post"], url_path="reset")
+    def reset(self, request, pk=None):
+        applicant = get_applicant_detail(pk)
+        if applicant is None:
+            raise Http404
+
+        from .services import reset_applicant
+        reset_applicant(
+            applicant=applicant,
+            reset_by=request.user if request.user.is_authenticated else None,
+            remarks=request.data.get("remarks", "Applicant reset after rejection."),
+        )
+
+        return Response(
+            ApplicantDetailSerializer(
+                get_applicant_detail(pk),
+                context=self.get_serializer_context(),
+            ).data,
+            status=status.HTTP_200_OK,
+        )
+
 
     @action(
         detail=True,
