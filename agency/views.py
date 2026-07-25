@@ -233,6 +233,77 @@ class SocialLinkViewSet(ModelViewSet):
         serializer.save(company=company)
 
 
+def ensure_templates_for_all_statuses():
+    """
+    Ensures that every ApplicationStatus in the database has a corresponding EmailTemplate.
+    """
+    from applicant.models import ApplicationStatus
+    from agency.models import EmailTemplate
+
+    statuses = ApplicationStatus.objects.all()
+    for status_obj in statuses:
+        if not EmailTemplate.objects.filter(status=status_obj).exists():
+            tmpl_name = f"{status_obj.name} Notification"
+            is_rejected = "reject" in status_obj.name.lower()
+            is_approved = "approve" in status_obj.name.lower() or "pass" in status_obj.name.lower()
+
+            if is_rejected:
+                subject = f"Application Update: {status_obj.name}"
+                body = (
+                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
+                    "<p>We regret to inform you that after careful review, your application "
+                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) for "
+                    "<strong style='color: #0f172a;'>{{ visa }}</strong> ({{ country }}) has been updated.</p>"
+                    "<div class='status-box'>"
+                    "  <span class='status-label'>New Application Status</span>"
+                    "  <p class='status-value'>{{ current_status }}</p>"
+                    "</div>"
+                    "<p>Our team is available to discuss your file and explore next steps or alternative solutions.</p>"
+                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                )
+            elif is_approved:
+                subject = f"Congratulations! Application Status: {status_obj.name}"
+                body = (
+                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
+                    "<p>We are delighted to inform you that your application "
+                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) for "
+                    "<strong style='color: #0f172a;'>{{ visa }}</strong> ({{ country }}) has been updated.</p>"
+                    "<div class='status-box'>"
+                    "  <span class='status-label'>New Application Status</span>"
+                    "  <p class='status-value'>{{ current_status }}</p>"
+                    "</div>"
+                    "<p>Our processing team will contact you shortly regarding the next steps.</p>"
+                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                )
+            else:
+                subject = f"Application Update: {status_obj.name}"
+                body = (
+                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
+                    "<p>We are writing to inform you that your application "
+                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) status has been updated.</p>"
+                    "<div class='status-box'>"
+                    "  <span class='status-label'>New Application Status</span>"
+                    "  <p class='status-value'>{{ current_status }}</p>"
+                    "</div>"
+                    "<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>"
+                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                )
+
+            base_name = tmpl_name
+            counter = 1
+            while EmailTemplate.objects.filter(name=tmpl_name).exists():
+                tmpl_name = f"{base_name} ({counter})"
+                counter += 1
+
+            EmailTemplate.objects.create(
+                name=tmpl_name,
+                status=status_obj,
+                subject=subject,
+                body=body,
+                is_active=True,
+            )
+
+
 class EmailTemplateViewSet(ModelViewSet):
     serializer_class = EmailTemplateSerializer
 
@@ -247,11 +318,18 @@ class EmailTemplateViewSet(ModelViewSet):
     ]
 
     def get_queryset(self):
+        try:
+            ensure_templates_for_all_statuses()
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(f"Error ensuring templates for all statuses: {exc}")
+
         return (
             EmailTemplate.objects.select_related(
                 "status",
             )
             .order_by(
+                "status__display_order",
                 "name",
             )
         )

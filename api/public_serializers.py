@@ -302,12 +302,12 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
         approved_count = Applicant.objects.filter(
             slot__staff=staff,
             status__name__icontains="approved"
-        ).count()
+        ).count() + (getattr(staff, "fake_approved_count", 0) or 0)
 
         rejected_count = Applicant.objects.filter(
             slot__staff=staff,
             status__name__icontains="rejected"
-        ).count()
+        ).count() + (getattr(staff, "fake_rejected_count", 0) or 0)
 
         processing_count = Applicant.objects.filter(
             slot__staff=staff,
@@ -361,10 +361,12 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
             "passport_number": staff.passport_number,
             "date_of_birth": str(staff.date_of_birth) if staff.date_of_birth else None,
             "reference_staff": staff.reference_staff.user.get_full_name() if staff.reference_staff else None,
+            "monthly_rank": staff.monthly_rank,
+            "yearly_rank": staff.yearly_rank,
         }
 
         # Include requested or new public fields
-        extra_always_included = {"father_name", "passport_number", "date_of_birth", "joining_date", "gender", "nationality"}
+        extra_always_included = {"father_name", "passport_number", "date_of_birth", "joining_date", "gender", "nationality", "monthly_rank", "yearly_rank"}
         return {
             k: v
             for k, v in values.items()

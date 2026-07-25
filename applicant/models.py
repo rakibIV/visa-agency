@@ -513,6 +513,11 @@ class Applicant(SoftDeleteModel):
         help_text="Internal permanent remarks.",
     )
 
+    send_email_on_status_change = models.BooleanField(
+        default=True,
+        help_text="If enabled, updating applicant status automatically dispatches notification emails.",
+    )
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -1662,7 +1667,7 @@ class FakeLiveResult(BaseModel):
     )
     
     application_id = models.CharField(
-        max_length=8,
+        max_length=50,
         db_index=True,
     )
     

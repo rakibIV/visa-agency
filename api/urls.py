@@ -20,6 +20,7 @@ from api.public_views import (
     PublicCurrentMonthStaffSlotListAPIView,
     PublicStaffProfileAccessAPIView,
     PublicContactUsCreateAPIView,
+    PublicApplicantStatisticsAPIView,
 )
 
 from api.views import (
@@ -240,6 +241,11 @@ urlpatterns = [
         "public/applicant-results/current-month/",
         PublicCurrentMonthApplicantResultListAPIView.as_view(),
         name="public-current-month-applicant-results",
+    ),
+    path(
+        "public/applicant-statistics/",
+        PublicApplicantStatisticsAPIView.as_view(),
+        name="public-applicant-statistics",
     ),
     path("", include(router.urls)),
     path("", include(country_router.urls)),

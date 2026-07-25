@@ -86,8 +86,8 @@ def build_email_context(
 
     lawyer_name = getattr(lawyer, "name", "") if lawyer else ""
     lawyer_address = getattr(lawyer, "address", "") if lawyer else ""
-    lawyer_phone = getattr(lawyer, "phone", "") if lawyer else ""
-    lawyer_email = getattr(lawyer, "email", "") if lawyer else ""
+    lawyer_phone = ""
+    lawyer_email = ""
     
     father_name = getattr(getattr(applicant, "profile", None), "father_name", "") or ""
     nid_number = getattr(applicant, "nid_number", "") or ""
@@ -121,8 +121,8 @@ def build_email_context(
         "company_signature": company_signature,
         "lawyer_name": lawyer_name,
         "lawyer_address": lawyer_address,
-        "lawyer_phone": lawyer_phone,
-        "lawyer_email": lawyer_email,
+        "lawyer_phone": "",
+        "lawyer_email": "",
     }
     context.update(extra_context)
     return context
@@ -166,30 +166,22 @@ def wrap_in_predesigned_email_template(content, context):
     company_logo = context.get("company_logo", "")
     company_tagline = context.get("company_tagline", "")
     company_logo_display = context.get("company_logo_display", "none")
-    
-    lawyer_name = context.get("lawyer_name", "")
-    lawyer_address = context.get("lawyer_address", "")
-    lawyer_phone = context.get("lawyer_phone", "")
-    lawyer_email = context.get("lawyer_email", "")
 
-    lawyer_card_html = ""
-    if lawyer_name:
-        address_html = f"<div style='font-size: 13px; color: #475569; margin-bottom: 4px; white-space: pre-line; line-height: 1.5;'>{lawyer_address}</div>" if lawyer_address else ""
-        contact_items = []
-        if lawyer_phone:
-            contact_items.append(f"Phone: {lawyer_phone}")
-        if lawyer_email:
-            contact_items.append(f"Email: {lawyer_email}")
-        contact_str = " &bull; ".join(contact_items)
-        contact_html = f"<div style='font-size: 12px; color: #64748b; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;'>{contact_str}</div>" if contact_str else ""
+    current_status = str(context.get("current_status", "")).lower()
+    is_rejected = "reject" in current_status
 
-        lawyer_card_html = f"""
-        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 6px;">Legal Representative / Lawyer</div>
-          <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{lawyer_name}</div>
-          {address_html}
-          {contact_html}
-        </div>
+    if is_rejected:
+        status_box_css = """
+    .status-box { background: linear-gradient(to right, #fef2f2, #ffffff); border-left: 4px solid #ef4444; border-right: 1px solid #fee2e2; border-top: 1px solid #fee2e2; border-bottom: 1px solid #fee2e2; padding: 20px 25px; margin: 25px 0; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .status-label { font-size: 12px; text-transform: uppercase; color: #991b1b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+    .status-value { font-size: 18px; color: #b91c1c; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #fee2e2; border-radius: 20px; }
+        """
+        content = content.replace("#eff6ff", "#fef2f2").replace("#3b82f6", "#ef4444").replace("#1d4ed8", "#b91c1c").replace("#dbeafe", "#fee2e2")
+    else:
+        status_box_css = """
+    .status-box { background: linear-gradient(to right, #eff6ff, #ffffff); border-left: 4px solid #3b82f6; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 20px 25px; margin: 25px 0; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .status-label { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+    .status-value { font-size: 18px; color: #1d4ed8; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #dbeafe; border-radius: 20px; }
         """
 
     logo_td = f"""<td valign="middle" style="padding-right: 15px; display: {company_logo_display}"><img src="{company_logo}" alt="{company_name}" class="header-logo" onerror="this.style.display='none'" /></td>""" if company_logo else ""
@@ -207,9 +199,7 @@ def wrap_in_predesigned_email_template(content, context):
     .header h1 {{ margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; text-align: left; color: #ffffff; }}
     .tagline {{ margin: 4px 0 0 0; font-size: 14px; font-weight: 400; opacity: 0.9; letter-spacing: 0.5px; text-align: left; color: #e0f2fe; }}
     .content {{ padding: 40px 35px; line-height: 1.7; font-size: 15px; color: #334155; }}
-    .status-box {{ background: linear-gradient(to right, #eff6ff, #ffffff); border-left: 4px solid #3b82f6; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 20px 25px; margin: 25px 0; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }}
-    .status-label {{ font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 8px; }}
-    .status-value {{ font-size: 18px; color: #1d4ed8; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #dbeafe; border-radius: 20px; }}
+    {status_box_css}
     .footer {{ background-color: #f8fafc; padding: 25px 35px; text-align: left; font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; }}
   </style>
 </head>
@@ -236,12 +226,40 @@ def wrap_in_predesigned_email_template(content, context):
       {content}
     </div>
     <div class='footer'>
-      {lawyer_card_html}
       <p style='margin: 0; font-size: 12px; color: #94a3b8; text-align: center;'>&copy; {company_name}. All rights reserved.</p>
     </div>
   </div>
 </body>
 </html>"""
+
+
+def _apply_lawyer_signature(body, context):
+    lawyer_name = context.get("lawyer_name")
+    if not lawyer_name:
+        return body
+
+    lawyer_address = context.get("lawyer_address", "")
+    address_html = f"<br><span style='color: #475569; font-size: 13px; font-weight: 400; display: block; margin-top: 2px;'>{lawyer_address}</span>" if lawyer_address else ""
+    lawyer_sig_content = (
+        f"Best regards<br>"
+        f"<strong style='color: #0f172a; font-size: 15px; display: block; margin-top: 4px;'>{lawyer_name}</strong>"
+        f"<span style='color: #64748b; font-size: 13px; font-weight: 500; display: block; margin-top: 2px;'>Legal Representative</span>"
+        f"{address_html}"
+    )
+
+    # 1. Match full paragraph <p>Best regards...</p>
+    match_p = re.search(r"<p[^>]*>\s*Best\s+regards.*?</p>", body, re.IGNORECASE | re.DOTALL)
+    if match_p:
+        replacement = f"<p style='margin-top: 24px;'>{lawyer_sig_content}</p>"
+        return body[:match_p.start()] + replacement + body[match_p.end():]
+
+    # 2. Match non-paragraph Best regards...
+    match_plain = re.search(r"Best\s+regards.*", body, re.IGNORECASE | re.DOTALL)
+    if match_plain:
+        replacement = f"<p style='margin-top: 24px;'>{lawyer_sig_content}</p>"
+        return body[:match_plain.start()] + replacement
+
+    return body + f"<p style='margin-top: 24px;'>{lawyer_sig_content}</p>"
 
 
 def render_email_template(
@@ -258,6 +276,8 @@ def render_email_template(
         template.body,
         context,
     )
+
+    body = _apply_lawyer_signature(body, context)
 
     if body.strip().startswith("<!DOCTYPE") or body.strip().startswith("<html"):
         return subject, body

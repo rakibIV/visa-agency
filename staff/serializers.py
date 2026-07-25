@@ -230,6 +230,10 @@ class StaffSerializer(serializers.ModelSerializer):
             "whatsapp",
             "reference_staff",
             "is_active",
+            "monthly_rank",
+            "yearly_rank",
+            "fake_approved_count",
+            "fake_rejected_count",
             "monthly_slots",
         ]
 
@@ -313,6 +317,10 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
             "joining_date",
             "reference_staff",
             "is_active",
+            "monthly_rank",
+            "yearly_rank",
+            "fake_approved_count",
+            "fake_rejected_count",
             "public_slug",
             "is_public",
         ]
@@ -479,6 +487,10 @@ class StaffDetailSerializer(serializers.ModelSerializer):
             "joining_date",
             "reference_staff",
             "is_active",
+            "monthly_rank",
+            "yearly_rank",
+            "fake_approved_count",
+            "fake_rejected_count",
             "public_slug",
             "is_public",
             "monthly_slots",

@@ -426,24 +426,50 @@ def get_status_history(applicant):
 # =========================================================
 
 def get_applicant_statistics():
-    queryset = Applicant.objects.filter(
+    from .models import Applicant, FakeLiveResult
+    from django.db.models import Q
+
+    applicant_qs = Applicant.objects.filter(
         is_deleted=False,
     )
+    fake_qs = FakeLiveResult.objects.all()
+
+    app_total = applicant_qs.count()
+    app_approved = applicant_qs.filter(
+        Q(status__slug="approved") | Q(status__name__iexact="approved")
+    ).count()
+    app_rejected = applicant_qs.filter(
+        Q(status__slug="rejected") | Q(status__name__icontains="reject")
+    ).count()
+    app_processing = max(0, app_total - app_approved - app_rejected)
+
+    fake_total = fake_qs.count()
+    fake_approved = fake_qs.filter(
+        Q(status__slug="approved") | Q(status__name__iexact="approved")
+    ).count()
+    fake_rejected = fake_qs.filter(
+        Q(status__slug="rejected") | Q(status__name__icontains="reject")
+    ).count()
+    fake_processing = max(0, fake_total - fake_approved - fake_rejected)
+
+    total = app_total + fake_total
+    approved = app_approved + fake_approved
+    rejected = app_rejected + fake_rejected
+    processing = app_processing + fake_processing
 
     return {
-        "total": queryset.count(),
-        "approved": queryset.filter(
-            status__slug="approved",
-        ).count(),
-        "rejected": queryset.filter(
-            status__slug="rejected",
-        ).count(),
-        "processing": queryset.exclude(
-            status__slug__in=[
-                "approved",
-                "rejected",
-            ]
-        ).count(),
+        "total": total,
+        "approved": approved,
+        "rejected": rejected,
+        "processing": processing,
+        "real_total": app_total,
+        "fake_total": fake_total,
+        "real_approved": app_approved,
+        "fake_approved": fake_approved,
+        "real_rejected": app_rejected,
+        "fake_rejected": fake_rejected,
+        "real_processing": app_processing,
+        "fake_processing": fake_processing,
     }
 
 
@@ -453,20 +479,31 @@ def get_staff_statistics(staff):
         is_deleted=False,
     )
 
+    fake_approved = getattr(staff, "fake_approved_count", 0) or 0
+    fake_rejected = getattr(staff, "fake_rejected_count", 0) or 0
+
+    real_approved = queryset.filter(
+        status__slug="approved",
+    ).count()
+    real_rejected = queryset.filter(
+        status__slug="rejected",
+    ).count()
+    processing = queryset.exclude(
+        status__slug__in=[
+            "approved",
+            "rejected",
+        ]
+    ).count()
+
+    approved = real_approved + fake_approved
+    rejected = real_rejected + fake_rejected
+    total = queryset.count() + fake_approved + fake_rejected
+
     return {
-        "total": queryset.count(),
-        "approved": queryset.filter(
-            status__slug="approved",
-        ).count(),
-        "rejected": queryset.filter(
-            status__slug="rejected",
-        ).count(),
-        "processing": queryset.exclude(
-            status__slug__in=[
-                "approved",
-                "rejected",
-            ]
-        ).count(),
+        "total": total,
+        "approved": approved,
+        "rejected": rejected,
+        "processing": processing,
     }
 
 

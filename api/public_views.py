@@ -256,3 +256,13 @@ class PublicApplicationRequestCreateAPIView(CreateAPIView):
 class PublicContactUsCreateAPIView(CreateAPIView):
     serializer_class = PublicContactUsSerializer
     permission_classes = [AllowAny]
+
+
+class PublicApplicantStatisticsAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from applicant.selectors import get_applicant_statistics
+        stats = get_applicant_statistics()
+        return Response(stats, status=status.HTTP_200_OK)
+

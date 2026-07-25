@@ -150,6 +150,28 @@ class Staff(BaseModel):
         default=True,
     )
 
+    fake_approved_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manual/fake addition to lifetime approved visa count.",
+    )
+
+    fake_rejected_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manual/fake addition to lifetime rejected visa count.",
+    )
+
+    monthly_rank = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Optional staff monthly ranking position (e.g. 1, 2, 3).",
+    )
+
+    yearly_rank = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Optional staff yearly ranking position (e.g. 1, 2, 3).",
+    )
+
     class Meta:
         ordering = [
             "employee_id",

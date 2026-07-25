@@ -1289,7 +1289,7 @@ def change_applicant_status(
         remarks=remarks,
     )
 
-    if send_email:
+    if send_email and getattr(applicant, "send_email_on_status_change", True):
         try:
             template = get_template_for_status(new_status)
 

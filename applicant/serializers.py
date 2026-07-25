@@ -1323,6 +1323,7 @@ class ApplicantDetailSerializer(serializers.ModelSerializer):
             "documents",
             "notes",
             "status_history",
+            "send_email_on_status_change",
             "created_at",
             "updated_at",
         )
