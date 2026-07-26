@@ -1,5 +1,5 @@
+import re
 from django.forms.models import model_to_dict
-
 from .models import Staff
 
 
@@ -12,24 +12,23 @@ def _generate_employee_id():
         EMP-0002
         EMP-0003
     """
+    emp_ids = Staff.objects.filter(employee_id__startswith="EMP-").values_list("employee_id", flat=True)
+    max_num = 0
+    for eid in emp_ids:
+        match = re.match(r"^EMP-(\d+)$", eid)
+        if match:
+            try:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
 
-    last_staff = (
-        Staff.objects.only("employee_id")
-        .order_by("-created_at")
-        .first()
-    )
+    candidate_num = max_num + 1
+    while Staff.objects.filter(employee_id=f"EMP-{candidate_num:04d}").exists():
+        candidate_num += 1
 
-    if last_staff is None:
-        return "EMP-0001"
-
-    last_number = int(
-        last_staff.employee_id.replace(
-            "EMP-",
-            "",
-        )
-    )
-
-    return f"EMP-{last_number + 1:04d}"
+    return f"EMP-{candidate_num:04d}"
 
 
 def get_staff_data(staff):

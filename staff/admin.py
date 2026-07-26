@@ -104,9 +104,7 @@ class StaffAdmin(admin.ModelAdmin):
         "reference_staff",
     ]
 
-    readonly_fields = [
-        "employee_id",
-    ]
+    readonly_fields = []
 
     inlines = [
         StaffMonthlySlotInline,

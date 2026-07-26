@@ -59,7 +59,7 @@ class Staff(BaseModel):
     employee_id = models.CharField(
         max_length=20,
         unique=True,
-        editable=False,
+        blank=True,
         db_index=True,
     )
 
@@ -185,6 +185,12 @@ class Staff(BaseModel):
             f"{self.employee_id} - "
             f"{self.user.get_full_name()}"
         )
+
+    def save(self, *args, **kwargs):
+        if not self.employee_id:
+            from .utils import _generate_employee_id
+            self.employee_id = _generate_employee_id()
+        super().save(*args, **kwargs)
 
 
 class StaffMonthlySlot(BaseModel):

@@ -97,3 +97,55 @@ class SubStaffMonthlySlotTests(TestCase):
             allocation_month=month,
             allocated_slot=4,
         )
+
+
+class EmployeeIDTests(TestCase):
+    def setUp(self):
+        self.user_model = get_user_model()
+        self.company = CompanyInformation.objects.create(
+            company_name="Test Company",
+            phone="123456789",
+            address="Test Address",
+        )
+        self.office = Office.objects.create(
+            company=self.company,
+            branch_name="Head Office",
+            phone="123456789",
+            address="Test Address",
+        )
+        self.designation = Designation.objects.create(name="Officer")
+
+    def test_auto_generate_employee_id_when_blank(self):
+        user = self.user_model.objects.create_user(username="u1", email="u1@example.com", password="pass")
+        staff = Staff.objects.create(
+            user=user,
+            employee_id="",
+            designation=self.designation,
+            office=self.office,
+            phone="01700000000",
+            father_name="F",
+            mother_name="M",
+            gender="male",
+            date_of_birth=date(1990, 1, 1),
+            nationality="Bangladeshi",
+            joining_date=date(2024, 1, 1),
+        )
+        self.assertTrue(staff.employee_id.startswith("EMP-"))
+
+    def test_custom_employee_id(self):
+        user = self.user_model.objects.create_user(username="u2", email="u2@example.com", password="pass")
+        staff = Staff.objects.create(
+            user=user,
+            employee_id="CUSTOM-99",
+            designation=self.designation,
+            office=self.office,
+            phone="01700000000",
+            father_name="F",
+            mother_name="M",
+            gender="male",
+            date_of_birth=date(1990, 1, 1),
+            nationality="Bangladeshi",
+            joining_date=date(2024, 1, 1),
+        )
+        self.assertEqual(staff.employee_id, "CUSTOM-99")
+

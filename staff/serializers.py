@@ -277,7 +277,9 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
     )
 
     employee_id = serializers.CharField(
-        read_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
 
     photo = serializers.ImageField(required=False, allow_null=True)
@@ -324,6 +326,19 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
             "public_slug",
             "is_public",
         ]
+
+    def validate_employee_id(self, value):
+        if not value:
+            return value
+        value = value.strip()
+        qs = Staff.objects.filter(employee_id=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                "A staff member with this Employee ID already exists."
+            )
+        return value
 
     def validate_email(self, value):
         if not value:

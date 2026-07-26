@@ -20,7 +20,11 @@ def create_staff(
     Creates both the Django User account and the Staff profile.
     """
 
-    employee_id = _generate_employee_id()
+    employee_id = staff_data.pop("employee_id", None)
+    if employee_id:
+        employee_id = str(employee_id).strip()
+    if not employee_id:
+        employee_id = _generate_employee_id()
 
     user = User.objects.create_user(
         username=employee_id,
@@ -86,6 +90,16 @@ def update_staff(
 
     if new_password:
         user.set_password(new_password)
+
+    if "employee_id" in staff_data:
+        emp_id = staff_data.pop("employee_id")
+        if emp_id:
+            emp_id = str(emp_id).strip()
+        if not emp_id:
+            emp_id = _generate_employee_id()
+        if staff.employee_id != emp_id:
+            staff.employee_id = emp_id
+            user.username = emp_id
 
     user.save()
 
