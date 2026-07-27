@@ -351,8 +351,8 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
     received_by_name = serializers.SerializerMethodField()
 
     manual_exchange_rate = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=4,
+        max_digits=18,
+        decimal_places=8,
         required=False,
         allow_null=True,
         write_only=True,

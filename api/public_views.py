@@ -221,14 +221,7 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
         applicants = get_public_current_month_applicant_results()
 
         from applicant.models import FakeLiveResult
-        from django.utils import timezone
-        today = timezone.localdate()
-        start_date = today - timezone.timedelta(days=90)
-        
-        fake_results = FakeLiveResult.objects.filter(
-            result_date__date__gte=start_date,
-            result_date__date__lte=today,
-        ).select_related(
+        fake_results = FakeLiveResult.objects.all().select_related(
             "visa",
             "visa__country",
             "job",
@@ -236,7 +229,10 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
         )
 
         combined = list(applicants) + list(fake_results)
-        combined.sort(key=lambda x: getattr(x, "result_date", None) or getattr(x, "updated_at", None), reverse=True)
+        combined.sort(
+            key=lambda x: getattr(x, "result_date", None) or getattr(x, "updated_at", None),
+            reverse=True,
+        )
 
         return Response(
             PublicApplicantResultSerializer(

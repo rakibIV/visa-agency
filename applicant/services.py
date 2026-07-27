@@ -904,19 +904,80 @@ def create_payment(
         applicant,
     )
 
-    if manual_exchange_rate is not None and Decimal(str(manual_exchange_rate)) > 0:
-        exchange_rate = Decimal(str(manual_exchange_rate))
-    else:
-        try:
-            exchange_rate = get_exchange_rate(from_currency=currency.upper())
-        except Exception:
-            exchange_rate = get_fallback_exchange_rate(currency.upper())
+def _calculate_euro_amount_and_rate(currency, amount, manual_exchange_rate=None):
+    curr_upper = (currency or "EUR").upper()
+    amt = Decimal(str(amount))
 
-    euro_amount = (
-        Decimal(str(amount))
-        * exchange_rate
-    ).quantize(
-        Decimal("0.01")
+    if curr_upper == "EUR":
+        return Decimal("1.00000000"), amt.quantize(Decimal("0.01"))
+
+    if manual_exchange_rate is not None and Decimal(str(manual_exchange_rate)) > 0:
+        raw_rate = Decimal(str(manual_exchange_rate))
+
+        if curr_upper == "GBP":
+            if raw_rate >= Decimal("1.0"):
+                exchange_rate = raw_rate.quantize(Decimal("0.00000001"))
+                euro_amount = (amt * raw_rate).quantize(Decimal("0.01"))
+            else:
+                euro_amount = (amt / raw_rate).quantize(Decimal("0.01"))
+                exchange_rate = (Decimal("1.0") / raw_rate).quantize(Decimal("0.00000001"))
+        else:
+            if raw_rate > Decimal("1.0"):
+                euro_amount = (amt / raw_rate).quantize(Decimal("0.01"))
+                exchange_rate = (Decimal("1.0") / raw_rate).quantize(Decimal("0.00000001"))
+            else:
+                exchange_rate = raw_rate.quantize(Decimal("0.00000001"))
+                euro_amount = (amt * raw_rate).quantize(Decimal("0.01"))
+
+        return exchange_rate, euro_amount
+
+    try:
+        exchange_rate = get_exchange_rate(from_currency=curr_upper)
+    except Exception:
+        exchange_rate = get_fallback_exchange_rate(curr_upper)
+
+    if exchange_rate > Decimal("1.0") and curr_upper != "GBP":
+        euro_amount = (amt / exchange_rate).quantize(Decimal("0.01"))
+        exchange_rate = (Decimal("1.0") / exchange_rate).quantize(Decimal("0.00000001"))
+    else:
+        euro_amount = (amt * exchange_rate).quantize(Decimal("0.01"))
+        exchange_rate = exchange_rate.quantize(Decimal("0.00000001"))
+
+    return exchange_rate, euro_amount
+
+
+def create_payment(
+    *,
+    applicant,
+    payment_date,
+    payment_method,
+    currency,
+    amount,
+    installment_type=PaymentInstallmentType.INITIAL,
+    received_by=None,
+    receipt_number="",
+    reference="",
+    note="",
+    important_note="",
+    manual_exchange_rate=None,
+    generated_by=None,
+):
+    """
+    Creates a payment for an applicant.
+
+    - Auto payment number
+    - Calculates euro amount and stores high-precision exchange rate
+    """
+
+    payment_number = generate_payment_number(
+        applicant,
+    )
+
+    curr_upper = currency.upper()
+    exchange_rate, euro_amount = _calculate_euro_amount_and_rate(
+        currency=curr_upper,
+        amount=amount,
+        manual_exchange_rate=manual_exchange_rate,
     )
 
     payment = ApplicantPayment.objects.create(
@@ -926,7 +987,7 @@ def create_payment(
         installment_type=installment_type,
         payment_date=payment_date,
         payment_method=payment_method,
-        currency=currency.upper(),
+        currency=curr_upper,
         amount=amount,
         euro_amount=euro_amount,
         receipt_number=receipt_number,
@@ -967,28 +1028,20 @@ def update_payment(
         )
 
     payment.currency = payment.currency.upper()
+    curr_upper = payment.currency
     
     manual_exchange_rate = payment_data.get("manual_exchange_rate", None)
+    if manual_exchange_rate is None and "exchange_rate" in payment_data:
+        manual_exchange_rate = payment_data.get("exchange_rate")
 
-    if manual_exchange_rate is not None and Decimal(str(manual_exchange_rate)) > 0:
-        exchange_rate = Decimal(str(manual_exchange_rate))
-    else:
-        try:
-            exchange_rate = get_exchange_rate(from_currency=payment.currency)
-        except Exception:
-            if getattr(payment, "exchange_rate", None) and payment.exchange_rate > 0 and payment.currency != "EUR":
-                exchange_rate = payment.exchange_rate
-            else:
-                exchange_rate = get_fallback_exchange_rate(payment.currency)
+    exchange_rate, euro_amount = _calculate_euro_amount_and_rate(
+        currency=curr_upper,
+        amount=payment.amount,
+        manual_exchange_rate=manual_exchange_rate,
+    )
 
     payment.exchange_rate = exchange_rate
-
-    payment.euro_amount = (
-        Decimal(str(payment.amount))
-        * payment.exchange_rate
-    ).quantize(
-        Decimal("0.01")
-    )
+    payment.euro_amount = euro_amount
 
     payment.save()
 

@@ -930,8 +930,8 @@ class ApplicantPayment(BaseModel):
     )
 
     exchange_rate = models.DecimalField(
-        max_digits=12,
-        decimal_places=4,
+        max_digits=18,
+        decimal_places=8,
         help_text="Exchange rate used during payment.",
     )
 
@@ -1052,8 +1052,8 @@ class ApplicantMoneyReceipt(BaseModel):
     )
 
     exchange_rate = models.DecimalField(
-        max_digits=12,
-        decimal_places=4,
+        max_digits=18,
+        decimal_places=8,
     )
 
     euro_amount = models.DecimalField(

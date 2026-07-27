@@ -15,6 +15,7 @@ from applicant.services import (
     change_applicant_status,
     create_applicant,
     create_payment,
+    update_payment,
 )
 from country.models import Country
 from core.choices import PaymentInstallmentType
@@ -250,3 +251,92 @@ class ApplicantAutomaticTriggerTests(TestCase):
                 generated_from_rejection=True,
             ).exists()
         )
+
+
+class ManualExchangeRatePaymentTests(TestCase):
+    def test_create_payment_with_manual_exchange_rate(self):
+        country = Country.objects.create(name="Germany", currency="EUR")
+        visa_category = VisaCategory.objects.create(name="Work")
+        visa = Visa.objects.create(
+            country=country,
+            category=visa_category,
+            name="Skilled Worker",
+        )
+        job = VisaJob.objects.create(
+            visa=visa,
+            title="Software Engineer",
+        )
+        status = ApplicationStatus.objects.create(
+            name="New",
+            slug="new",
+            is_default=True,
+        )
+        applicant = create_applicant(
+            full_name="Test Applicant",
+            passport_number="B9876543",
+            date_of_birth="1995-05-05",
+            visa=visa,
+            job=job,
+            status=status,
+        )
+
+        # 140,000 BDT at 140 BDT/EUR rate should yield 1000.00 EUR
+        payment = create_payment(
+            applicant=applicant,
+            payment_date=date.today(),
+            payment_method="cash",
+            currency="BDT",
+            amount=Decimal("140000.00"),
+            manual_exchange_rate=Decimal("140.00"),
+            installment_type=PaymentInstallmentType.INITIAL,
+        )
+
+        self.assertEqual(payment.euro_amount, Decimal("1000.00"))
+
+        # Update payment to 140,000 BDT with manual exchange rate of 135 BDT/EUR
+        updated_payment = update_payment(
+            payment=payment,
+            manual_exchange_rate=Decimal("135.00"),
+        )
+        # 140000 / 135 = 1037.04 EUR
+        self.assertEqual(updated_payment.euro_amount, Decimal("1037.04"))
+
+    def test_gbp_payment_with_manual_exchange_rate(self):
+        country = Country.objects.create(name="UK", currency="GBP")
+        visa_category = VisaCategory.objects.create(name="Work")
+        visa = Visa.objects.create(
+            country=country,
+            category=visa_category,
+            name="Tier 2",
+        )
+        job = VisaJob.objects.create(
+            visa=visa,
+            title="Nurse",
+        )
+        status = ApplicationStatus.objects.create(
+            name="New",
+            slug="new-gbp",
+            is_default=True,
+        )
+        applicant = create_applicant(
+            full_name="GBP Applicant",
+            passport_number="C1234567",
+            date_of_birth="1992-02-02",
+            visa=visa,
+            job=job,
+            status=status,
+        )
+
+        # 5,000 GBP at 1.17 EUR/GBP rate should yield 5850.00 EUR
+        payment = create_payment(
+            applicant=applicant,
+            payment_date=date.today(),
+            payment_method="cash",
+            currency="GBP",
+            amount=Decimal("5000.00"),
+            manual_exchange_rate=Decimal("1.17"),
+            installment_type=PaymentInstallmentType.INITIAL,
+        )
+
+        self.assertEqual(payment.euro_amount, Decimal("5850.00"))
+

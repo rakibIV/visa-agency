@@ -55,7 +55,7 @@ def _fetch_rate_from_api(from_currency, to_currency):
     if from_rate == 0:
         raise CurrencyFreaksException("Invalid base currency rate.")
 
-    exchange_rate = (to_rate / from_rate).quantize(Decimal("0.0001"))
+    exchange_rate = (to_rate / from_rate).quantize(Decimal("0.00000001"))
     return exchange_rate
 
 FALLBACK_RATES = {
@@ -90,7 +90,7 @@ def get_exchange_rate(from_currency, to_currency=DEFAULT_TARGET_CURRENCY, **kwar
     to_currency = _normalize_currency_code(to_currency)
 
     if from_currency == to_currency:
-        return Decimal("1.0000")
+        return Decimal("1.00000000")
 
     # Check for manual exchange rate override
     if from_currency == "EUR" and to_currency == "BDT":
@@ -102,6 +102,6 @@ def get_exchange_rate(from_currency, to_currency=DEFAULT_TARGET_CURRENCY, **kwar
         from agency.models import CompanyInformation
         company = CompanyInformation.objects.first()
         if company and company.use_manual_exchange_rate and company.manual_exchange_rate > 0:
-            return (Decimal("1.0") / company.manual_exchange_rate).quantize(Decimal("0.0001"))
+            return (Decimal("1.0") / company.manual_exchange_rate).quantize(Decimal("0.00000001"))
 
     return _fetch_rate_from_api(from_currency, to_currency)
