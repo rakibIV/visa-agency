@@ -689,18 +689,19 @@ def calculate_refund_breakdown(applicant):
 
 
 def is_payment_confirmed(applicant):
-    required_installment = (
-        PaymentInstallmentType.THIRD
-        if applicant.payment_plan_installments == 3
-        else PaymentInstallmentType.SECOND
-    )
+    if applicant.payment_plan_installments == 1:
+        required_installment = PaymentInstallmentType.INITIAL
+    elif applicant.payment_plan_installments == 3:
+        required_installment = PaymentInstallmentType.THIRD
+    else:
+        required_installment = PaymentInstallmentType.SECOND
 
     return applicant.payments.filter(
         installment_type=required_installment,
     ).exists()
 
 
-def _sync_payment_status(applicant, changed_by=None):
+def _sync_payment_status(applicant, changed_by=None, send_email=True):
     if is_payment_confirmed(applicant):
         status = _get_status_by_name_or_slug("Payment Confirmed")
         if status and applicant.status != status:
@@ -709,6 +710,8 @@ def _sync_payment_status(applicant, changed_by=None):
                 new_status=status,
                 changed_by=changed_by,
                 remarks="Status updated automatically from payment progress.",
+                send_email=send_email and bool(applicant.lawyer),
+                sender=applicant.lawyer,
             )
             
         # Generate default agreements when payment is confirmed
@@ -728,7 +731,7 @@ def _sync_payment_status(applicant, changed_by=None):
                 new_status=first_payment_status,
                 changed_by=changed_by,
                 remarks="First payment received.",
-                send_email=bool(applicant.lawyer),
+                send_email=send_email and bool(applicant.lawyer),
                 sender=applicant.lawyer,
             )
             
@@ -739,7 +742,7 @@ def _sync_payment_status(applicant, changed_by=None):
                 new_status=profile_created_status,
                 changed_by=changed_by,
                 remarks="Profile automatically activated after first payment.",
-                send_email=bool(applicant.lawyer),
+                send_email=send_email and bool(applicant.lawyer),
                 sender=applicant.lawyer,
             )
 
@@ -1005,7 +1008,30 @@ def create_payment(
     _sync_payment_status(
         applicant,
         changed_by=received_by,
+        send_email=True,
     )
+
+    if getattr(applicant, "email", None) and getattr(applicant, "send_email_on_status_change", True):
+        try:
+            from applicant.emailing import send_applicant_email, get_template_by_name
+            tmpl = get_template_by_name("Payment Received Notification")
+            if tmpl:
+                context = {
+                    "receipt_number": receipt_number or f"REC-{payment.id}",
+                    "amount": str(amount),
+                    "currency": curr_upper,
+                    "installment_type": installment_type,
+                    "payment_date": str(payment_date),
+                    "reference": reference or "N/A",
+                }
+                send_applicant_email(
+                    applicant=applicant,
+                    template=tmpl,
+                    extra_context=context,
+                    sender=applicant.lawyer,
+                )
+        except Exception:
+            pass
 
     return payment
 
@@ -1048,6 +1074,7 @@ def update_payment(
     _sync_payment_status(
         payment.applicant,
         changed_by=payment.received_by,
+        send_email=False,
     )
 
     return payment
@@ -1225,6 +1252,28 @@ def create_refund_for_rejected_applicant(
         generated_by=created_by,
     )
 
+    if getattr(applicant, "email", None) and getattr(applicant, "send_email_on_status_change", True):
+        try:
+            from django.utils import timezone
+            from applicant.emailing import send_applicant_email, get_template_by_name
+            tmpl = get_template_by_name("Refund Disbursed Notification")
+            if tmpl:
+                context = {
+                    "refund_number": f"REF-{refund.id}",
+                    "amount": str(breakdown.get("refund_amount", 0)),
+                    "currency": "BDT",
+                    "refund_date": str(timezone.localdate()),
+                    "refund_reason": reason or "N/A",
+                }
+                send_applicant_email(
+                    applicant=applicant,
+                    template=tmpl,
+                    extra_context=context,
+                    sender=applicant.lawyer,
+                )
+        except Exception:
+            pass
+
     return refund
 
 
@@ -1317,7 +1366,7 @@ def change_applicant_status(
     remarks="",
     updated_by=None,
     sender=None,
-    send_email=False,
+    send_email=True,
 ):
     """
     Changes applicant status and
@@ -1326,10 +1375,10 @@ def change_applicant_status(
 
     old_status = applicant.status
 
-    if old_status == new_status:
-        return applicant
+    from django.utils import timezone
 
     applicant.status = new_status
+    applicant.updated_at = timezone.now()
 
     update_fields = [
         "status",
@@ -1354,6 +1403,12 @@ def change_applicant_status(
         changed_by=changed_by,
         remarks=remarks,
     )
+
+    if _is_rejected_status(new_status):
+        create_refund_for_rejected_applicant(
+            applicant,
+            reason=remarks or "Application status set to rejected.",
+        )
 
     if send_email and getattr(applicant, "send_email_on_status_change", True):
         try:

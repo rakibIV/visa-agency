@@ -205,6 +205,14 @@ class StaffMonthlySlotViewSet(ModelViewSet):
             staff_id=staff_pk,
         )
 
+    def perform_destroy(self, instance):
+        used_count = instance.applicants.count()
+        if used_count > 0:
+            raise serializers.ValidationError(
+                {"detail": f"Cannot delete slot because {used_count} applicant(s) are already using this slot."}
+            )
+        instance.delete()
+
 
 class SubStaffViewSet(ModelViewSet):
     serializer_class = SubStaffSerializer

@@ -220,8 +220,16 @@ class PublicCurrentMonthApplicantResultListAPIView(APIView):
     def get(self, request):
         applicants = get_public_current_month_applicant_results()
 
+        from django.utils import timezone
         from applicant.models import FakeLiveResult
-        fake_results = FakeLiveResult.objects.all().select_related(
+
+        today = timezone.localdate()
+        start_date = today - timezone.timedelta(days=90)
+
+        fake_results = FakeLiveResult.objects.filter(
+            result_date__date__gte=start_date,
+            result_date__date__lte=today,
+        ).select_related(
             "visa",
             "visa__country",
             "job",

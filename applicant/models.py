@@ -966,6 +966,12 @@ class ApplicantPayment(BaseModel):
         help_text="Important note printed on money receipt.",
     )
 
+    countdown_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Target countdown days for status tracking.",
+    )
+
     class Meta:
         ordering = [
             "payment_number",

@@ -193,14 +193,61 @@ def get_public_applicant_status(
     ).first()
 
 
+def get_approved_status_ids():
+    statuses = list(ApplicationStatus.objects.filter(is_active=True).order_by("display_order", "id"))
+    
+    visa_app_st = next(
+        (s for s in statuses if "visa approved" in (s.name or "").lower() or "visa-approved" in (s.slug or "").lower()),
+        None
+    )
+    if not visa_app_st:
+        visa_app_st = next(
+            (s for s in statuses if (s.name or "").lower() == "approved" or (s.slug or "").lower() == "approved"),
+            None
+        )
+    if not visa_app_st:
+        visa_app_st = next(
+            (s for s in statuses if "approve" in (s.name or "").lower() or "approve" in (s.slug or "").lower()),
+            None
+        )
+
+    approved_start_order = visa_app_st.display_order if visa_app_st else 999999
+
+    approved_ids = []
+    for st in statuses:
+        name_lower = (st.name or "").lower()
+        slug_lower = (st.slug or "").lower()
+        is_reject = any(k in name_lower or k in slug_lower for k in ["reject", "cancel", "refuse"])
+
+        if is_reject:
+            continue
+        if st.display_order >= approved_start_order:
+            approved_ids.append(st.id)
+    return approved_ids
+
+
+def get_rejected_status_ids():
+    statuses = ApplicationStatus.objects.filter(is_active=True)
+    rejected_ids = []
+    for st in statuses:
+        name_lower = (st.name or "").lower()
+        slug_lower = (st.slug or "").lower()
+        if any(k in name_lower or k in slug_lower for k in ["reject", "cancel", "refuse"]):
+            rejected_ids.append(st.id)
+    return rejected_ids
+
+
 def get_public_current_month_applicant_results():
     today = timezone.localdate()
     start_date = today - timezone.timedelta(days=90)
+    approved_ids = get_approved_status_ids()
+    rejected_ids = get_rejected_status_ids()
+    relevant_status_ids = approved_ids + rejected_ids
 
     return (
         Applicant.objects.filter(
             is_deleted=False,
-            status__slug__iregex=r"approved|rejected",
+            status_id__in=relevant_status_ids,
             updated_at__date__gte=start_date,
             updated_at__date__lte=today,
         )
@@ -455,29 +502,23 @@ def get_status_history(applicant):
 
 def get_applicant_statistics():
     from .models import Applicant, FakeLiveResult
-    from django.db.models import Q
 
     applicant_qs = Applicant.objects.filter(
         is_deleted=False,
     )
     fake_qs = FakeLiveResult.objects.all()
 
+    approved_ids = get_approved_status_ids()
+    rejected_ids = get_rejected_status_ids()
+
     app_total = applicant_qs.count()
-    app_approved = applicant_qs.filter(
-        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
-    ).count()
-    app_rejected = applicant_qs.filter(
-        Q(status__slug="rejected") | Q(status__name__icontains="reject")
-    ).count()
+    app_approved = applicant_qs.filter(status_id__in=approved_ids).count()
+    app_rejected = applicant_qs.filter(status_id__in=rejected_ids).count()
     app_processing = max(0, app_total - app_approved - app_rejected)
 
     fake_total = fake_qs.count()
-    fake_approved = fake_qs.filter(
-        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
-    ).count()
-    fake_rejected = fake_qs.filter(
-        Q(status__slug="rejected") | Q(status__name__icontains="reject")
-    ).count()
+    fake_approved = fake_qs.filter(status_id__in=approved_ids).count()
+    fake_rejected = fake_qs.filter(status_id__in=rejected_ids).count()
     fake_processing = max(0, fake_total - fake_approved - fake_rejected)
 
     total = app_total + fake_total
@@ -492,6 +533,7 @@ def get_applicant_statistics():
         "processing": processing,
         "real_total": app_total,
         "fake_total": fake_total,
+        "base_served": 17000,
         "real_approved": app_approved,
         "fake_approved": fake_approved,
         "real_rejected": app_rejected,
@@ -510,16 +552,12 @@ def get_staff_statistics(staff):
     fake_approved = getattr(staff, "fake_approved_count", 0) or 0
     fake_rejected = getattr(staff, "fake_rejected_count", 0) or 0
 
-    real_approved = queryset.filter(
-        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
-    ).count()
-    real_rejected = queryset.filter(
-        Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
-    ).count()
-    processing = queryset.exclude(
-        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve") |
-        Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
-    ).count()
+    approved_ids = get_approved_status_ids()
+    rejected_ids = get_rejected_status_ids()
+
+    real_approved = queryset.filter(status_id__in=approved_ids).count()
+    real_rejected = queryset.filter(status_id__in=rejected_ids).count()
+    processing = max(0, queryset.count() - real_approved - real_rejected)
 
     approved = real_approved + fake_approved
     rejected = real_rejected + fake_rejected
@@ -530,6 +568,10 @@ def get_staff_statistics(staff):
         "approved": approved,
         "rejected": rejected,
         "processing": processing,
+        "real_approved": real_approved,
+        "real_rejected": real_rejected,
+        "fake_approved": fake_approved,
+        "fake_rejected": fake_rejected,
     }
 
 

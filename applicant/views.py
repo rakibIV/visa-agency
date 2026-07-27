@@ -298,17 +298,19 @@ class ApplicantViewSet(ModelViewSet):
         "nid_number",
         "profile__phone",
         "profile__email",
+        "profile__emergency_contact_phone",
     ]
 
     ordering_fields = [
         "application_id",
         "full_name",
         "created_at",
+        "updated_at",
         "date_of_birth",
     ]
 
     ordering = [
-        "-created_at",
+        "-updated_at",
     ]
 
     def get_queryset(self):  # type: ignore[override]
@@ -489,7 +491,7 @@ class ApplicantViewSet(ModelViewSet):
                 "",
             ),
             sender=validated_data.get("sender") or applicant.lawyer,
-            send_email=validated_data.get("send_email", False),
+            send_email=validated_data.get("send_email", True),
         )
 
         return Response(
@@ -1102,6 +1104,7 @@ class ApplicantStatusHistoryViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
 
     http_method_names = [
         "get",
+        "delete",
         "head",
         "options",
     ]

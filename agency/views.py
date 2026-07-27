@@ -257,43 +257,29 @@ def ensure_templates_for_all_statuses():
             if is_rejected:
                 subject = f"Application Update: {status_obj.name}"
                 body = (
-                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
-                    "<p>We regret to inform you that after careful review, your application "
-                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) for "
-                    "<strong style='color: #0f172a;'>{{ visa }}</strong> ({{ country }}) has been updated.</p>"
-                    "<div class='status-box'>"
-                    "  <span class='status-label'>New Application Status</span>"
-                    "  <p class='status-value'>{{ current_status }}</p>"
-                    "</div>"
-                    "<p>Our team is available to discuss your file and explore next steps or alternative solutions.</p>"
-                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                    "Dear {{ applicant_name }},\n\n"
+                    "We regret to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
+                    "Status: {{ current_status }}\n\n"
+                    "Our team is available to discuss your file and explore next steps or alternative solutions.\n\n"
+                    "Best regards,\nThe {{ company_name }} Team"
                 )
             elif is_approved:
                 subject = f"Congratulations! Application Status: {status_obj.name}"
                 body = (
-                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
-                    "<p>We are delighted to inform you that your application "
-                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) for "
-                    "<strong style='color: #0f172a;'>{{ visa }}</strong> ({{ country }}) has been updated.</p>"
-                    "<div class='status-box'>"
-                    "  <span class='status-label'>New Application Status</span>"
-                    "  <p class='status-value'>{{ current_status }}</p>"
-                    "</div>"
-                    "<p>Our processing team will contact you shortly regarding the next steps.</p>"
-                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                    "Dear {{ applicant_name }},\n\n"
+                    "We are delighted to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
+                    "Status: {{ current_status }}\n\n"
+                    "Our processing team will contact you shortly regarding the next steps.\n\n"
+                    "Best regards,\nThe {{ company_name }} Team"
                 )
             else:
                 subject = f"Application Update: {status_obj.name}"
                 body = (
-                    "<p>Dear <strong style='color: #0f172a;'>{{ applicant_name }}</strong>,</p>"
-                    "<p>We are writing to inform you that your application "
-                    "(ID: <strong style='color: #0f172a;'>{{ applicant_id }}</strong>) status has been updated.</p>"
-                    "<div class='status-box'>"
-                    "  <span class='status-label'>New Application Status</span>"
-                    "  <p class='status-value'>{{ current_status }}</p>"
-                    "</div>"
-                    "<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>"
-                    "<p>Best regards,<br>The {{ company_name }} Team</p>"
+                    "Dear {{ applicant_name }},\n\n"
+                    "We are writing to inform you that your application (ID: {{ applicant_id }}) status has been updated.\n\n"
+                    "Status: {{ current_status }}\n\n"
+                    "If you have any questions or require further assistance, please do not hesitate to contact our team.\n\n"
+                    "Best regards,\nThe {{ company_name }} Team"
                 )
 
             base_name = tmpl_name
@@ -309,6 +295,38 @@ def ensure_templates_for_all_statuses():
                 body=body,
                 is_active=True,
             )
+
+    # Ensure Payment Received email template exists
+    if not EmailTemplate.objects.filter(name="Payment Received Notification").exists():
+        EmailTemplate.objects.create(
+            name="Payment Received Notification",
+            subject="Payment Confirmation - Receipt {{ receipt_number }}",
+            body=(
+                "Dear {{ applicant_name }},\n\n"
+                "We have successfully received your payment of {{ currency }} {{ amount }} (Receipt No: {{ receipt_number }}).\n\n"
+                "Installment Type: {{ installment_type }}\n"
+                "Payment Date: {{ payment_date }}\n"
+                "Reference: {{ reference }}\n\n"
+                "Thank you for your payment.\n\n"
+                "Best regards,\nThe {{ company_name }} Team"
+            ),
+            is_active=True,
+        )
+
+    # Ensure Refund Disbursed email template exists
+    if not EmailTemplate.objects.filter(name="Refund Disbursed Notification").exists():
+        EmailTemplate.objects.create(
+            name="Refund Disbursed Notification",
+            subject="Refund Confirmation - {{ refund_number }}",
+            body=(
+                "Dear {{ applicant_name }},\n\n"
+                "A refund of {{ currency }} {{ amount }} has been processed for your application (ID: {{ applicant_id }}).\n\n"
+                "Refund Date: {{ refund_date }}\n"
+                "Reason: {{ refund_reason }}\n\n"
+                "Best regards,\nThe {{ company_name }} Team"
+            ),
+            is_active=True,
+        )
 
 
 class EmailTemplateViewSet(ModelViewSet):

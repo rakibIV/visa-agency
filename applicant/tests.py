@@ -60,15 +60,19 @@ class ApplicantAgreementGenerationTests(TestCase):
             visa=visa,
             title="Software Engineer",
         )
-        status = ApplicationStatus.objects.create(
-            name="New",
+        status, _ = ApplicationStatus.objects.get_or_create(
             slug="new",
-            is_default=True,
+            defaults={"name": "New", "is_default": True, "is_active": True},
         )
-        ApplicationStatus.objects.create(
-            name="Payment Confirmed",
+        status.is_active = True
+        status.save()
+
+        p_status, _ = ApplicationStatus.objects.get_or_create(
             slug="payment-confirmed",
+            defaults={"name": "Payment Confirmed", "is_active": True},
         )
+        p_status.is_active = True
+        p_status.save()
         template = AgreementTemplate.objects.create(
             title="Main Agreement",
             code="main-agreement",
@@ -220,11 +224,12 @@ class ApplicantAutomaticTriggerTests(TestCase):
 
     def test_rejected_applicant_creates_refund_if_eligible(self):
         applicant = self._create_applicant()
-        rejected_status = ApplicationStatus.objects.create(
-            name="Rejected",
+        rejected_status, _ = ApplicationStatus.objects.get_or_create(
             slug="rejected",
-            is_final=True,
+            defaults={"name": "Rejected", "is_final": True, "is_active": True},
         )
+        rejected_status.is_active = True
+        rejected_status.save()
 
         with patch(
             "applicant.services.get_exchange_rate",
@@ -339,4 +344,28 @@ class ManualExchangeRatePaymentTests(TestCase):
         )
 
         self.assertEqual(payment.euro_amount, Decimal("5850.00"))
+
+
+class StatusFlowCountingTests(TestCase):
+    def test_statuses_after_visa_approved_are_counted_as_approved(self):
+        from applicant.selectors import get_approved_status_ids, get_rejected_status_ids
+
+        ApplicationStatus.objects.all().delete()
+
+        st1 = ApplicationStatus.objects.create(name="Documents Submitted", display_order=1, slug="doc-sub")
+        st2 = ApplicationStatus.objects.create(name="Visa Approved", display_order=2, slug="visa-approved")
+        st3 = ApplicationStatus.objects.create(name="Ticket & Stamping", display_order=3, slug="ticket-stamping")
+        st4 = ApplicationStatus.objects.create(name="Passport Handover", display_order=4, slug="passport-handover")
+        st_rej = ApplicationStatus.objects.create(name="Rejected", display_order=5, slug="rejected")
+
+        approved_ids = get_approved_status_ids()
+        rejected_ids = get_rejected_status_ids()
+
+        self.assertIn(st2.id, approved_ids)
+        self.assertIn(st3.id, approved_ids)
+        self.assertIn(st4.id, approved_ids)
+        self.assertNotIn(st1.id, approved_ids)
+        self.assertNotIn(st_rej.id, approved_ids)
+        self.assertIn(st_rej.id, rejected_ids)
+
 

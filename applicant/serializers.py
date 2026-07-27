@@ -191,7 +191,7 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
 
     send_email = serializers.BooleanField(
         required=False,
-        default=False,
+        default=True,
     )
 
     remarks = serializers.CharField(
@@ -380,6 +380,7 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "received_by_name",
             "note",
             "important_note",
+            "countdown_days",
             "manual_exchange_rate",
             "created_at",
             "updated_at",
@@ -1043,12 +1044,15 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "assigned_staff_name",
             "lawyer",
             "created_at",
+            "updated_at",
         )
 
         read_only_fields = (
             "id",
             "application_id",
+            "full_name",
             "created_at",
+            "updated_at",
         )
 
     def get_assigned_staff_name(self, obj):
@@ -1120,7 +1124,13 @@ class ApplicantSerializer(serializers.ModelSerializer):
                 data["refund_bank_detail"] = json.loads(data["refund_bank_detail"])
             except ValueError:
                 pass
-                
+
+        if "lawyer" in data and data["lawyer"] in ("", "null", "None", None):
+            data["lawyer"] = None
+
+        if "slot" in data and data["slot"] in ("", "null", "None", None):
+            data["slot"] = None
+
         return super().to_internal_value(data)
 
     def validate_status(self, value):
@@ -1160,6 +1170,8 @@ class ApplicantSerializer(serializers.ModelSerializer):
         instance,
         validated_data,
     ):
+        old_status_id = instance.status_id
+
         profile_data = validated_data.pop("profile", None)
         refund_bank_detail_data = validated_data.pop("refund_bank_detail", None)
         new_status = validated_data.pop("status", None)
@@ -1171,7 +1183,7 @@ class ApplicantSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        if new_status is not None and new_status != instance.status:
+        if new_status is not None and getattr(new_status, "id", None) != old_status_id:
             from .services import change_applicant_status
             request = self.context.get("request")
             user = getattr(request, "user", None)

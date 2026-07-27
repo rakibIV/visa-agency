@@ -48,6 +48,7 @@ class PublicApplicantPaymentSerializer(serializers.ModelSerializer):
             "payment_method",
             "receipt_number",
             "payment_date",
+            "countdown_days",
             "important_note",
             "note",
         ]
@@ -93,6 +94,9 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
     mother_name = serializers.SerializerMethodField()
     nationality = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
+    lawyer_name = serializers.SerializerMethodField()
+    lawyer_address = serializers.SerializerMethodField()
+    countdown_info = serializers.SerializerMethodField()
     payments = PublicApplicantPaymentSerializer(many=True, read_only=True)
     refunds = PublicApplicantRefundSerializer(many=True, read_only=True)
 
@@ -118,12 +122,55 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
             "country",
             "status",
             "status_color",
+            "lawyer_name",
+            "lawyer_address",
+            "countdown_info",
             "status_history",
             "payments",
             "refunds",
             "created_at",
             "updated_at",
         ]
+
+    def get_countdown_info(self, obj):
+        payments = obj.payments.all()
+        target_payment = None
+        
+        for p in payments:
+            if p.countdown_days and p.countdown_days > 0:
+                target_payment = p
+                break
+        
+        if not target_payment:
+            if len(payments) >= 2 and payments[1].countdown_days:
+                target_payment = payments[1]
+
+        if not target_payment or not target_payment.countdown_days:
+            return None
+
+        today = timezone.localdate()
+        payment_date = target_payment.payment_date
+        days_elapsed = max(0, (today - payment_date).days)
+        target_days = target_payment.countdown_days
+        is_overdue = days_elapsed > target_days
+
+        return {
+            "target_days": target_days,
+            "days_elapsed": days_elapsed,
+            "is_overdue": is_overdue,
+            "payment_date": payment_date,
+            "installment_type": target_payment.installment_type,
+        }
+
+    def get_lawyer_name(self, obj):
+        if getattr(obj, "lawyer", None):
+            return obj.lawyer.name
+        return ""
+
+    def get_lawyer_address(self, obj):
+        if getattr(obj, "lawyer", None):
+            return obj.lawyer.address
+        return ""
 
     def get_job(self, obj):
         if not getattr(obj, "job", None):
@@ -161,14 +208,23 @@ class PublicApplicantStatusSerializer(serializers.ModelSerializer):
         return obj.photo.url if hasattr(obj.photo, 'url') else None
 
     def get_status_history(self, obj):
-        histories = obj.status_history.select_related(
-            "new_status",
-        ).order_by(
-            "created_at",
+        histories = list(
+            obj.status_history.select_related(
+                "new_status",
+            ).order_by("created_at")
         )
 
+        seen_status_ids = set()
+        unique_histories = []
+
+        for h in histories:
+            if not h.new_status or h.new_status_id in seen_status_ids:
+                continue
+            seen_status_ids.add(h.new_status_id)
+            unique_histories.append(h)
+
         return PublicApplicantStatusHistorySerializer(
-            histories,
+            unique_histories,
             many=True,
         ).data
 
@@ -184,6 +240,8 @@ class PublicApplicantResultSerializer(serializers.Serializer):
     result_date = serializers.DateTimeField()
     passport_number = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
+    is_approved = serializers.SerializerMethodField()
+    is_rejected = serializers.SerializerMethodField()
 
     def get_photo(self, obj):
         if not obj.photo:
@@ -208,6 +266,26 @@ class PublicApplicantResultSerializer(serializers.Serializer):
         if hasattr(obj, "visa") and obj.visa and obj.visa.country:
             return obj.visa.country.name
         return ""
+
+    def get_is_approved(self, obj):
+        if not getattr(obj, "status", None):
+            return False
+        st_name = (obj.status.name or "").lower()
+        st_slug = (getattr(obj.status, "slug", "") or "").lower()
+        if "approve" in st_name or "approve" in st_slug:
+            return True
+        from applicant.selectors import get_approved_status_ids
+        return obj.status.id in get_approved_status_ids()
+
+    def get_is_rejected(self, obj):
+        if not getattr(obj, "status", None):
+            return False
+        st_name = (obj.status.name or "").lower()
+        st_slug = (getattr(obj.status, "slug", "") or "").lower()
+        if any(k in st_name or k in st_slug for k in ["reject", "refus", "cancel"]):
+            return True
+        from applicant.selectors import get_rejected_status_ids
+        return obj.status.id in get_rejected_status_ids()
 
     def get_passport_number(self, obj):
         p_num = obj.passport_number or ""
@@ -328,20 +406,30 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
         current_total = current_month_slot.total_slot if current_month_slot else 0
         current_used = current_month_slot.used_slot if current_month_slot else 0
 
-        approved_count = Applicant.objects.filter(
-            slot__staff=staff,
-            status__name__icontains="approved"
-        ).count() + (getattr(staff, "fake_approved_count", 0) or 0)
+        from applicant.selectors import get_approved_status_ids, get_rejected_status_ids
 
-        rejected_count = Applicant.objects.filter(
-            slot__staff=staff,
-            status__name__icontains="rejected"
-        ).count() + (getattr(staff, "fake_rejected_count", 0) or 0)
+        approved_ids = get_approved_status_ids()
+        rejected_ids = get_rejected_status_ids()
 
-        processing_count = Applicant.objects.filter(
+        real_approved = Applicant.objects.filter(
             slot__staff=staff,
-            status__name__icontains="processing"
+            is_deleted=False,
+            status_id__in=approved_ids
         ).count()
+        approved_count = real_approved + (getattr(staff, "fake_approved_count", 0) or 0)
+
+        real_rejected = Applicant.objects.filter(
+            slot__staff=staff,
+            is_deleted=False,
+            status_id__in=rejected_ids
+        ).count()
+        rejected_count = real_rejected + (getattr(staff, "fake_rejected_count", 0) or 0)
+
+        total_real = Applicant.objects.filter(
+            slot__staff=staff,
+            is_deleted=False
+        ).count()
+        processing_count = max(0, total_real - real_approved - real_rejected)
 
         return {
             "current_month": month_start,

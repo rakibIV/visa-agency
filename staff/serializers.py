@@ -29,9 +29,8 @@ class DesignationSerializer(serializers.ModelSerializer):
 
 
 class StaffMonthlySlotSerializer(serializers.ModelSerializer):
-    remaining_slot = serializers.IntegerField(
-        read_only=True,
-    )
+    remaining_slot = serializers.SerializerMethodField()
+    used_slots = serializers.SerializerMethodField()
 
     class Meta:
         model = StaffMonthlySlot
@@ -40,7 +39,19 @@ class StaffMonthlySlotSerializer(serializers.ModelSerializer):
             "allocation_month",
             "total_slot",
             "remaining_slot",
+            "used_slots",
         ]
+
+    def get_used_slots(self, obj):
+        if hasattr(obj, "used_slots_count"):
+            return obj.used_slots_count
+        return obj.applicants.count()
+
+    def get_remaining_slot(self, obj):
+        if hasattr(obj, "remaining_slot") and getattr(obj, "remaining_slot") is not None:
+            return getattr(obj, "remaining_slot")
+        used = self.get_used_slots(obj)
+        return max(0, obj.total_slot - used)
 
 
 class SubStaffSerializer(serializers.ModelSerializer):

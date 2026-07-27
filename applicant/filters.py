@@ -89,14 +89,69 @@ class ApplicantFilter(django_filters.FilterSet):
         method="filter_in_progress"
     )
 
+    is_approved = django_filters.BooleanFilter(
+        method="filter_is_approved"
+    )
+
+    status_name = django_filters.CharFilter(
+        method="filter_status_name"
+    )
+
     def filter_in_progress(self, queryset, name, value):
-        from django.db.models import Q
         if value:
-            return queryset.exclude(
-                Q(status__slug__icontains="approve") | Q(status__name__icontains="approve") |
-                Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
-            )
+            from applicant.selectors import get_approved_status_ids, get_rejected_status_ids
+            approved_ids = get_approved_status_ids()
+            rejected_ids = get_rejected_status_ids()
+            return queryset.exclude(status_id__in=approved_ids + rejected_ids)
         return queryset
+
+    def filter_is_approved(self, queryset, name, value):
+        from applicant.selectors import get_approved_status_ids
+        approved_ids = get_approved_status_ids()
+        if value:
+            return queryset.filter(status_id__in=approved_ids)
+        return queryset.exclude(status_id__in=approved_ids)
+
+    def filter_status_name(self, queryset, name, value):
+        if not value:
+            return queryset
+        val_lower = value.strip().lower()
+        if val_lower in ["approve", "approved", "visa approved", "visa_approved"]:
+            from applicant.selectors import get_approved_status_ids
+            return queryset.filter(status_id__in=get_approved_status_ids())
+        if val_lower in ["reject", "rejected", "visa rejected", "visa_rejected"]:
+            from applicant.selectors import get_rejected_status_ids
+            return queryset.filter(status_id__in=get_rejected_status_ids())
+        return queryset.filter(status__name__icontains=value)
+
+    email = django_filters.CharFilter(
+        field_name="profile__email",
+        lookup_expr="icontains",
+    )
+
+    phone = django_filters.CharFilter(
+        field_name="profile__phone",
+        lookup_expr="icontains",
+    )
+
+    search = django_filters.CharFilter(
+        method="filter_search"
+    )
+
+    def filter_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        val = value.strip()
+        from django.db.models import Q
+        return queryset.filter(
+            Q(full_name__icontains=val) |
+            Q(application_id__icontains=val) |
+            Q(passport_number__icontains=val) |
+            Q(nid_number__icontains=val) |
+            Q(profile__email__icontains=val) |
+            Q(profile__phone__icontains=val) |
+            Q(profile__emergency_contact_phone__icontains=val)
+        ).distinct()
 
     class Meta:
         model = Applicant
@@ -114,6 +169,8 @@ class ApplicantFilter(django_filters.FilterSet):
             "agreement": ["exact"],
             "current_country": ["icontains"],
             "created_at": ["date"],
+            "profile__email": ["exact", "icontains"],
+            "profile__phone": ["exact", "icontains"],
         }
 
 
