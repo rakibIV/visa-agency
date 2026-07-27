@@ -464,7 +464,7 @@ def get_applicant_statistics():
 
     app_total = applicant_qs.count()
     app_approved = applicant_qs.filter(
-        Q(status__slug="approved") | Q(status__name__iexact="approved")
+        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
     ).count()
     app_rejected = applicant_qs.filter(
         Q(status__slug="rejected") | Q(status__name__icontains="reject")
@@ -473,7 +473,7 @@ def get_applicant_statistics():
 
     fake_total = fake_qs.count()
     fake_approved = fake_qs.filter(
-        Q(status__slug="approved") | Q(status__name__iexact="approved")
+        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
     ).count()
     fake_rejected = fake_qs.filter(
         Q(status__slug="rejected") | Q(status__name__icontains="reject")
@@ -511,16 +511,14 @@ def get_staff_statistics(staff):
     fake_rejected = getattr(staff, "fake_rejected_count", 0) or 0
 
     real_approved = queryset.filter(
-        status__slug="approved",
+        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve")
     ).count()
     real_rejected = queryset.filter(
-        status__slug="rejected",
+        Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
     ).count()
     processing = queryset.exclude(
-        status__slug__in=[
-            "approved",
-            "rejected",
-        ]
+        Q(status__slug__icontains="approve") | Q(status__name__icontains="approve") |
+        Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
     ).count()
 
     approved = real_approved + fake_approved

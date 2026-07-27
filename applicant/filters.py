@@ -85,6 +85,19 @@ class ApplicantFilter(django_filters.FilterSet):
         lookup_expr="lte",
     )
 
+    in_progress = django_filters.BooleanFilter(
+        method="filter_in_progress"
+    )
+
+    def filter_in_progress(self, queryset, name, value):
+        from django.db.models import Q
+        if value:
+            return queryset.exclude(
+                Q(status__slug__icontains="approve") | Q(status__name__icontains="approve") |
+                Q(status__slug__icontains="reject") | Q(status__name__icontains="reject")
+            )
+        return queryset
+
     class Meta:
         model = Applicant
 
@@ -95,6 +108,8 @@ class ApplicantFilter(django_filters.FilterSet):
             "nid_number": ["exact", "icontains"],
             "visa": ["exact"],
             "status": ["exact"],
+            "status__name": ["exact", "icontains"],
+            "status__slug": ["exact", "icontains"],
             "slot": ["exact"],
             "agreement": ["exact"],
             "current_country": ["icontains"],

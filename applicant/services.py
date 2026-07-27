@@ -889,6 +889,7 @@ def create_payment(
     reference="",
     note="",
     important_note="",
+    manual_exchange_rate=None,
     generated_by=None,
 ):
     """
@@ -903,10 +904,13 @@ def create_payment(
         applicant,
     )
 
-    try:
-        exchange_rate = get_exchange_rate(from_currency=currency.upper())
-    except Exception:
-        exchange_rate = get_fallback_exchange_rate(currency.upper())
+    if manual_exchange_rate is not None and Decimal(str(manual_exchange_rate)) > 0:
+        exchange_rate = Decimal(str(manual_exchange_rate))
+    else:
+        try:
+            exchange_rate = get_exchange_rate(from_currency=currency.upper())
+        except Exception:
+            exchange_rate = get_fallback_exchange_rate(currency.upper())
 
     euro_amount = (
         Decimal(str(amount))
@@ -963,14 +967,19 @@ def update_payment(
         )
 
     payment.currency = payment.currency.upper()
+    
+    manual_exchange_rate = payment_data.get("manual_exchange_rate", None)
 
-    try:
-        exchange_rate = get_exchange_rate(from_currency=payment.currency)
-    except Exception:
-        if getattr(payment, "exchange_rate", None) and payment.exchange_rate > 0 and payment.currency != "EUR":
-            exchange_rate = payment.exchange_rate
-        else:
-            exchange_rate = get_fallback_exchange_rate(payment.currency)
+    if manual_exchange_rate is not None and Decimal(str(manual_exchange_rate)) > 0:
+        exchange_rate = Decimal(str(manual_exchange_rate))
+    else:
+        try:
+            exchange_rate = get_exchange_rate(from_currency=payment.currency)
+        except Exception:
+            if getattr(payment, "exchange_rate", None) and payment.exchange_rate > 0 and payment.currency != "EUR":
+                exchange_rate = payment.exchange_rate
+            else:
+                exchange_rate = get_fallback_exchange_rate(payment.currency)
 
     payment.exchange_rate = exchange_rate
 

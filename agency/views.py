@@ -440,6 +440,7 @@ class CompanyLogoViewSet(ModelViewSet):
         return CompanyLogo.objects.all().select_related("company")
 
 
+
 class ImportantNoteViewSet(ModelViewSet):
     serializer_class = ImportantNoteSerializer
     permission_classes = [
@@ -453,5 +454,43 @@ class ImportantNoteViewSet(ModelViewSet):
     def get_queryset(self):
         from .models import ImportantNote
         return ImportantNote.objects.all()
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+class FakeStatsAPIView(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        company = CompanyInformation.objects.first()
+        if not company:
+            return Response({"approved_count": 0, "rejected_count": 0, "processing_count": 0})
+        return Response({
+            "approved_count": company.manual_approved_count,
+            "rejected_count": company.manual_rejected_count,
+            "processing_count": company.manual_processing_count,
+        })
+
+    def post(self, request, *args, **kwargs):
+        company = CompanyInformation.objects.first()
+        if not company:
+            # Create if it doesn't exist to prevent errors
+            company = CompanyInformation.objects.create(company_name="Default Company", address="Default Address", phone="123")
+            
+        company.manual_approved_count = int(request.data.get("approved_count", 0))
+        company.manual_rejected_count = int(request.data.get("rejected_count", 0))
+        company.manual_processing_count = int(request.data.get("processing_count", 0))
+        company.save()
+        
+        return Response({
+            "approved_count": company.manual_approved_count,
+            "rejected_count": company.manual_rejected_count,
+            "processing_count": company.manual_processing_count,
+        })
+        
+    def put(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
 
 

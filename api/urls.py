@@ -44,6 +44,7 @@ from agency.views import (
     AgencyImageViewSet,
     CompanyLogoViewSet,
     ImportantNoteViewSet,
+    FakeStatsAPIView,
 )
 from applicant.views import (
     AgreementTemplateClauseViewSet,
@@ -246,6 +247,11 @@ urlpatterns = [
         "public/applicant-statistics/",
         PublicApplicantStatisticsAPIView.as_view(),
         name="public-applicant-statistics",
+    ),
+    path(
+        "fake-stats/",
+        FakeStatsAPIView.as_view(),
+        name="fake-stats",
     ),
     path("", include(router.urls)),
     path("", include(country_router.urls)),

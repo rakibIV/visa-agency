@@ -350,7 +350,13 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
 
     received_by_name = serializers.SerializerMethodField()
 
-
+    manual_exchange_rate = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
 
     class Meta:
         model = ApplicantPayment
@@ -374,6 +380,7 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
             "received_by_name",
             "note",
             "important_note",
+            "manual_exchange_rate",
             "created_at",
             "updated_at",
         )

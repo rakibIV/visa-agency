@@ -83,12 +83,25 @@ def get_fallback_exchange_rate(currency_code):
 
 def get_exchange_rate(from_currency, to_currency=DEFAULT_TARGET_CURRENCY, **kwargs):
     """
-    Fetches and returns the real-time exchange rate directly from the API.
+    Fetches and returns the real-time exchange rate directly from the API,
+    or falls back to the manual exchange rate if enabled in CompanyInformation.
     """
     from_currency = _normalize_currency_code(from_currency)
     to_currency = _normalize_currency_code(to_currency)
 
     if from_currency == to_currency:
         return Decimal("1.0000")
+
+    # Check for manual exchange rate override
+    if from_currency == "EUR" and to_currency == "BDT":
+        from agency.models import CompanyInformation
+        company = CompanyInformation.objects.first()
+        if company and company.use_manual_exchange_rate:
+            return company.manual_exchange_rate
+    elif from_currency == "BDT" and to_currency == "EUR":
+        from agency.models import CompanyInformation
+        company = CompanyInformation.objects.first()
+        if company and company.use_manual_exchange_rate and company.manual_exchange_rate > 0:
+            return (Decimal("1.0") / company.manual_exchange_rate).quantize(Decimal("0.0001"))
 
     return _fetch_rate_from_api(from_currency, to_currency)

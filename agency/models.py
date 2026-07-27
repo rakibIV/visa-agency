@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.utils.text import slugify
 
 from core.models import BaseModel
+from decimal import Decimal
 from core.validators import (
     document_extension_validator,
     image_extension_validator,
@@ -363,6 +364,32 @@ class CompanyInformation(BaseModel):
         help_text="Default important note printed on money receipts.",
     )
 
+    use_manual_exchange_rate = models.BooleanField(
+        default=False,
+        help_text="If enabled, bypass API and use the manual exchange rate for EUR to BDT.",
+    )
+
+    manual_exchange_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        default=Decimal("140.6900"),
+        help_text="Manual exchange rate for 1 EUR to BDT.",
+    )
+
+    manual_approved_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manually inflated approved count for dashboard stats.",
+    )
+
+    manual_rejected_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manually inflated rejected count for dashboard stats.",
+    )
+
+    manual_processing_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manually inflated processing count for dashboard stats.",
+    )
 
     phone = models.CharField(
         max_length=30,
