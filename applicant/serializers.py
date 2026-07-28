@@ -120,8 +120,18 @@ class AgreementTemplateClauseSerializer(serializers.ModelSerializer):
         )
 
 
+class _NestedClauseSerializer(AgreementTemplateClauseSerializer):
+    """Clause serializer used when nested inside AgreementTemplateSerializer.
+    The template FK is assigned programmatically, so exclude it from validation."""
+
+    class Meta(AgreementTemplateClauseSerializer.Meta):
+        fields = tuple(
+            f for f in AgreementTemplateClauseSerializer.Meta.fields if f != "template"
+        )
+
+
 class AgreementTemplateSerializer(serializers.ModelSerializer):
-    clauses = AgreementTemplateClauseSerializer(many=True, read_only=True)
+    clauses = _NestedClauseSerializer(many=True, required=False)
 
     class Meta:
         model = AgreementTemplate
@@ -140,6 +150,39 @@ class AgreementTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
         )
+
+    def create(self, validated_data):
+        clauses_data = validated_data.pop("clauses", [])
+        template = AgreementTemplate.objects.create(**validated_data)
+        for clause_data in clauses_data:
+            clause_data.pop("id", None)
+            countries = clause_data.pop("countries", [])
+            clause = AgreementTemplateClause.objects.create(
+                template=template, **clause_data
+            )
+            if countries:
+                clause.countries.set(countries)
+        return template
+
+    def update(self, instance, validated_data):
+        clauses_data = validated_data.pop("clauses", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if clauses_data is not None:
+            # Remove old clauses and re-create
+            instance.clauses.all().delete()
+            for clause_data in clauses_data:
+                clause_data.pop("id", None)
+                countries = clause_data.pop("countries", [])
+                clause = AgreementTemplateClause.objects.create(
+                    template=instance, **clause_data
+                )
+                if countries:
+                    clause.countries.set(countries)
+
+        return instance
 
 
 class MailTriggerSerializer(serializers.Serializer):
@@ -356,6 +399,11 @@ class ApplicantPaymentSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
         write_only=True,
+    )
+
+    countdown_days = serializers.IntegerField(
+        required=False,
+        allow_null=True,
     )
 
     class Meta:

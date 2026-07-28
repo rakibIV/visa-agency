@@ -878,35 +878,6 @@ def update_applicant_address(
     return applicant_address
 
 
-@transaction.atomic
-def create_payment(
-    *,
-    applicant,
-    payment_date,
-    payment_method,
-    currency,
-    amount,
-    installment_type=PaymentInstallmentType.INITIAL,
-    received_by=None,
-    receipt_number="",
-    reference="",
-    note="",
-    important_note="",
-    manual_exchange_rate=None,
-    generated_by=None,
-):
-    """
-    Creates a payment for an applicant.
-
-    - Auto payment number
-    - Fetches live exchange rate from Currency Freaks
-    - Calculates euro amount
-    """
-
-    payment_number = generate_payment_number(
-        applicant,
-    )
-
 def _calculate_euro_amount_and_rate(currency, amount, manual_exchange_rate=None):
     curr_upper = (currency or "EUR").upper()
     amt = Decimal(str(amount))
@@ -949,6 +920,7 @@ def _calculate_euro_amount_and_rate(currency, amount, manual_exchange_rate=None)
     return exchange_rate, euro_amount
 
 
+@transaction.atomic
 def create_payment(
     *,
     applicant,
@@ -964,6 +936,7 @@ def create_payment(
     important_note="",
     manual_exchange_rate=None,
     generated_by=None,
+    countdown_days=None,
 ):
     """
     Creates a payment for an applicant.
@@ -998,6 +971,7 @@ def create_payment(
         received_by=received_by,
         note=note,
         important_note=important_note,
+        countdown_days=countdown_days,
     )
 
     generate_money_receipt_for_payment(
