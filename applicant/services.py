@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Sum
 from rest_framework.exceptions import ValidationError
 from .currency import (
     DEFAULT_TARGET_CURRENCY,
