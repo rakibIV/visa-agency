@@ -31,9 +31,17 @@ from .filters import (
     ApplicantDocumentFilter,
     ApplicantNoteFilter,
 )
+from django.db.models import Prefetch
+
 from .models import (
     AgreementTemplate,
     AgreementTemplateClause,
+    Applicant,
+    ApplicantDocument,
+    ApplicantMoneyReceipt,
+    ApplicantNote,
+    ApplicantPayment,
+    ApplicantStatusHistory,
     ApplicantTag,
     ApplicationStatus,
 )
