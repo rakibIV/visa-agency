@@ -60,15 +60,35 @@ class VisaCategoryViewSet(ModelViewSet):
 
 
 class VisaViewSet(ModelViewSet):
-    queryset = (
-        Visa.objects.select_related(
-            "country",
-            "category",
+    def get_queryset(self):
+        from django.db.models import Prefetch
+        from .models import VisaJob
+
+        if self.action == "retrieve":
+            return (
+                Visa.objects.select_related(
+                    "country",
+                    "category",
+                    "seo",
+                )
+                .prefetch_related(
+                    "services",
+                    "requirements",
+                    "steps",
+                    "faqs",
+                    Prefetch("jobs", queryset=VisaJob.objects.prefetch_related("facilities")),
+                )
+            )
+
+        return (
+            Visa.objects.select_related(
+                "country",
+                "category",
+            )
+            .prefetch_related(
+                "services",
+            )
         )
-        .prefetch_related(
-            "services",
-        )
-    )
 
     permission_classes = [
         IsAdminOrReadOnly,
@@ -137,21 +157,29 @@ class VisaViewSet(ModelViewSet):
 
 
 class VisaNestedViewSetMixin:
+    _cached_visa = None
+
     def get_visa(self):
+        if getattr(self, "_cached_visa", None) is not None:
+            return self._cached_visa
+
         visa_value = self.kwargs.get("visa_slug") or self.kwargs.get("visa_pk")
         if not visa_value:
             raise ValueError("Visa identifier is missing from the nested URL")
         
         qs = Visa.objects.filter(slug=visa_value)
         if qs.exists():
-            return qs.first()
+            self._cached_visa = qs.first()
+            return self._cached_visa
             
         import uuid
         try:
             uuid_obj = uuid.UUID(visa_value)
-            return get_object_or_404(Visa, pk=uuid_obj)
+            self._cached_visa = get_object_or_404(Visa, pk=uuid_obj)
         except ValueError:
-            return get_object_or_404(Visa, slug=visa_value)
+            self._cached_visa = get_object_or_404(Visa, slug=visa_value)
+
+        return self._cached_visa
 
 
 class VisaRequirementViewSet(VisaNestedViewSetMixin, ModelViewSet):

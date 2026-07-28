@@ -142,8 +142,17 @@ class ApplicationStatusViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        statuses = list(ApplicationStatus.objects.filter(pk__in=order_ids))
+        status_map = {str(s.pk): s for s in statuses}
+        to_update = []
         for index, status_id in enumerate(order_ids, start=1):
-            ApplicationStatus.objects.filter(pk=status_id).update(display_order=index)
+            s_obj = status_map.get(str(status_id))
+            if s_obj:
+                s_obj.display_order = index
+                to_update.append(s_obj)
+
+        if to_update:
+            ApplicationStatus.objects.bulk_update(to_update, ["display_order"])
 
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -316,15 +325,33 @@ class ApplicantViewSet(ModelViewSet):
     def get_queryset(self):  # type: ignore[override]
 
         if self.action == "retrieve":
-            applicant = get_applicant_detail(
-                self.kwargs["pk"],
-            )
-
-            if applicant is None:
-                return get_applicants().none()
-
-            return get_applicants().filter(
-                pk=applicant.pk,
+            return Applicant.objects.filter(
+                pk=self.kwargs["pk"],
+                is_deleted=False,
+            ).select_related(
+                "visa",
+                "visa__country",
+                "job",
+                "secondary_job",
+                "status",
+                "slot",
+                "slot__staff",
+                "slot__staff__user",
+                "agreement",
+                "profile",
+                "refund_bank_detail",
+            ).prefetch_related(
+                "tags",
+                "addresses",
+                Prefetch("payments", queryset=ApplicantPayment.objects.select_related("received_by", "received_by__user")),
+                Prefetch("money_receipts", queryset=ApplicantMoneyReceipt.objects.select_related("payment", "generated_by")),
+                "refunds",
+                "refund_receipts",
+                Prefetch("documents", queryset=ApplicantDocument.objects.select_related("verified_by", "verified_by__user")),
+                Prefetch("notes", queryset=ApplicantNote.objects.select_related("staff", "staff__user")),
+                Prefetch("status_history", queryset=ApplicantStatusHistory.objects.select_related(
+                    "old_status", "new_status", "changed_by", "changed_by__user"
+                )),
             )
 
         return get_applicants()
@@ -570,17 +597,20 @@ class ApplicantViewSet(ModelViewSet):
 
 class ApplicantNestedViewSetMixin:
 
+    _cached_applicant = None
+
     def get_applicant(self):
 
-        kwargs = getattr(self, "kwargs", {})
-        applicant = get_applicant_by_id(
-            kwargs.get("applicant_pk"),
-        )
+        if getattr(self, "_cached_applicant", None) is None:
+            kwargs = getattr(self, "kwargs", {})
+            self._cached_applicant = get_applicant_by_id(
+                kwargs.get("applicant_pk"),
+            )
 
-        if applicant is None:
-            raise Http404
+            if self._cached_applicant is None:
+                raise Http404
 
-        return applicant
+        return self._cached_applicant
 
 
 class ApplicantAddressViewSet(ApplicantNestedViewSetMixin, ModelViewSet):

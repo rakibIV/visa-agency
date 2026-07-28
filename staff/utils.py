@@ -12,7 +12,8 @@ def _generate_employee_id():
         EMP-0002
         EMP-0003
     """
-    emp_ids = Staff.objects.filter(employee_id__startswith="EMP-").values_list("employee_id", flat=True)
+    emp_ids = list(Staff.objects.filter(employee_id__startswith="EMP-").values_list("employee_id", flat=True))
+    existing_set = set(emp_ids)
     max_num = 0
     for eid in emp_ids:
         match = re.match(r"^EMP-(\d+)$", eid)
@@ -25,7 +26,7 @@ def _generate_employee_id():
                 pass
 
     candidate_num = max_num + 1
-    while Staff.objects.filter(employee_id=f"EMP-{candidate_num:04d}").exists():
+    while f"EMP-{candidate_num:04d}" in existing_set:
         candidate_num += 1
 
     return f"EMP-{candidate_num:04d}"

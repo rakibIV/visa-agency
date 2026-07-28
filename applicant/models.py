@@ -736,10 +736,12 @@ class ApplicantProfile(BaseModel):
         validators=[
             validate_phone_number,
         ],
+        db_index=True,
     )
 
     email = models.EmailField(
         blank=False,
+        db_index=True,
     )
 
     occupation = models.CharField(

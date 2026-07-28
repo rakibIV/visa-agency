@@ -267,6 +267,12 @@ class PublicApplicantResultSerializer(serializers.Serializer):
             return obj.visa.country.name
         return ""
 
+    def _get_classification(self):
+        if not hasattr(self, "_cached_classification"):
+            from applicant.selectors import get_status_classification
+            self._cached_classification = get_status_classification()
+        return self._cached_classification
+
     def get_is_approved(self, obj):
         if not getattr(obj, "status", None):
             return False
@@ -274,8 +280,8 @@ class PublicApplicantResultSerializer(serializers.Serializer):
         st_slug = (getattr(obj.status, "slug", "") or "").lower()
         if "approve" in st_name or "approve" in st_slug:
             return True
-        from applicant.selectors import get_approved_status_ids
-        return obj.status.id in get_approved_status_ids()
+        approved_ids = self._get_classification()["approved_ids"]
+        return obj.status.id in approved_ids
 
     def get_is_rejected(self, obj):
         if not getattr(obj, "status", None):
@@ -284,8 +290,8 @@ class PublicApplicantResultSerializer(serializers.Serializer):
         st_slug = (getattr(obj.status, "slug", "") or "").lower()
         if any(k in st_name or k in st_slug for k in ["reject", "refus", "cancel"]):
             return True
-        from applicant.selectors import get_rejected_status_ids
-        return obj.status.id in get_rejected_status_ids()
+        rejected_ids = self._get_classification()["rejected_ids"]
+        return obj.status.id in rejected_ids
 
     def get_passport_number(self, obj):
         p_num = obj.passport_number or ""
@@ -406,30 +412,12 @@ class PublicStaffProfileSerializer(serializers.ModelSerializer):
         current_total = current_month_slot.total_slot if current_month_slot else 0
         current_used = current_month_slot.used_slot if current_month_slot else 0
 
-        from applicant.selectors import get_approved_status_ids, get_rejected_status_ids
+        from applicant.selectors import get_staff_statistics
+        staff_stats = get_staff_statistics(staff)
 
-        approved_ids = get_approved_status_ids()
-        rejected_ids = get_rejected_status_ids()
-
-        real_approved = Applicant.objects.filter(
-            slot__staff=staff,
-            is_deleted=False,
-            status_id__in=approved_ids
-        ).count()
-        approved_count = real_approved + (getattr(staff, "fake_approved_count", 0) or 0)
-
-        real_rejected = Applicant.objects.filter(
-            slot__staff=staff,
-            is_deleted=False,
-            status_id__in=rejected_ids
-        ).count()
-        rejected_count = real_rejected + (getattr(staff, "fake_rejected_count", 0) or 0)
-
-        total_real = Applicant.objects.filter(
-            slot__staff=staff,
-            is_deleted=False
-        ).count()
-        processing_count = max(0, total_real - real_approved - real_rejected)
+        approved_count = staff_stats["approved"]
+        rejected_count = staff_stats["rejected"]
+        processing_count = staff_stats["processing"]
 
         return {
             "current_month": month_start,

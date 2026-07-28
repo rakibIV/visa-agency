@@ -82,11 +82,15 @@ class CountryViewSet(ModelViewSet):
 
 
 class CountryNestedViewSetMixin:
+    _cached_country = None
+
     def get_country(self):
-        country_value = self.kwargs.get("country_slug") or self.kwargs.get("country_pk")
-        if not country_value:
-            raise ValueError("Country identifier is missing from the nested URL")
-        return get_object_or_404(Country, slug=country_value)
+        if getattr(self, "_cached_country", None) is None:
+            country_value = self.kwargs.get("country_slug") or self.kwargs.get("country_pk")
+            if not country_value:
+                raise ValueError("Country identifier is missing from the nested URL")
+            self._cached_country = get_object_or_404(Country, slug=country_value)
+        return self._cached_country
 
 
 class CountryFAQViewSet(CountryNestedViewSetMixin, ModelViewSet):

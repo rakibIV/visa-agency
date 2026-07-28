@@ -159,8 +159,10 @@ def build_refund_bank_snapshot(bank_detail):
 
 
 def build_payment_summary_snapshot(applicant):
-    payments = applicant.payments.order_by(
-        "payment_number",
+    payments = list(
+        applicant.payments.order_by(
+            "payment_number",
+        )
     )
 
     items = [
@@ -647,18 +649,14 @@ def get_applicant_payment_summary(applicant):
 
 
 def get_refundable_payment_total(applicant):
-    return sum(
-        (
-            payment.amount
-            for payment in applicant.payments.filter(
-                installment_type__in=[
-                    PaymentInstallmentType.SECOND,
-                    PaymentInstallmentType.THIRD,
-                ],
-            )
-        ),
-        Decimal("0.00"),
-    ).quantize(
+    total = applicant.payments.filter(
+        installment_type__in=[
+            PaymentInstallmentType.SECOND,
+            PaymentInstallmentType.THIRD,
+        ],
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
+    return Decimal(str(total)).quantize(
         Decimal("0.01")
     )
 
@@ -720,6 +718,7 @@ def _sync_payment_status(applicant, changed_by=None, send_email=True):
             
         return
 
+    # Check if initial payment exists before fetching first_payment_status & profile_created_status
     if applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
         first_payment_status = _get_status_by_name_or_slug("1st Payment recieved")
         profile_created_status = _get_status_by_name_or_slug("Profile Created")

@@ -243,90 +243,114 @@ class SocialLinkViewSet(ModelViewSet):
 def ensure_templates_for_all_statuses():
     """
     Ensures that every ApplicationStatus in the database has a corresponding EmailTemplate.
+    Pre-fetches existing data to avoid N+1 queries.
     """
     from applicant.models import ApplicationStatus
     from agency.models import EmailTemplate
 
-    statuses = ApplicationStatus.objects.all()
+    # Pre-fetch all existing data in 3 queries total (not N+1)
+    statuses = list(ApplicationStatus.objects.all())
+    existing_status_ids = set(
+        EmailTemplate.objects.filter(status__isnull=False).values_list("status_id", flat=True)
+    )
+    existing_names = set(
+        EmailTemplate.objects.values_list("name", flat=True)
+    )
+
+    templates_to_create = []
+
     for status_obj in statuses:
-        if not EmailTemplate.objects.filter(status=status_obj).exists():
-            tmpl_name = f"{status_obj.name} Notification"
-            is_rejected = "reject" in status_obj.name.lower()
-            is_approved = "approve" in status_obj.name.lower() or "pass" in status_obj.name.lower()
+        if status_obj.id in existing_status_ids:
+            continue
 
-            if is_rejected:
-                subject = f"Application Update: {status_obj.name}"
-                body = (
-                    "Dear {{ applicant_name }},\n\n"
-                    "We regret to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
-                    "Status: {{ current_status }}\n\n"
-                    "Our team is available to discuss your file and explore next steps or alternative solutions.\n\n"
-                    "Best regards,\nThe {{ company_name }} Team"
-                )
-            elif is_approved:
-                subject = f"Congratulations! Application Status: {status_obj.name}"
-                body = (
-                    "Dear {{ applicant_name }},\n\n"
-                    "We are delighted to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
-                    "Status: {{ current_status }}\n\n"
-                    "Our processing team will contact you shortly regarding the next steps.\n\n"
-                    "Best regards,\nThe {{ company_name }} Team"
-                )
-            else:
-                subject = f"Application Update: {status_obj.name}"
-                body = (
-                    "Dear {{ applicant_name }},\n\n"
-                    "We are writing to inform you that your application (ID: {{ applicant_id }}) status has been updated.\n\n"
-                    "Status: {{ current_status }}\n\n"
-                    "If you have any questions or require further assistance, please do not hesitate to contact our team.\n\n"
-                    "Best regards,\nThe {{ company_name }} Team"
-                )
+        tmpl_name = f"{status_obj.name} Notification"
+        is_rejected = "reject" in status_obj.name.lower()
+        is_approved = "approve" in status_obj.name.lower() or "pass" in status_obj.name.lower()
 
-            base_name = tmpl_name
-            counter = 1
-            while EmailTemplate.objects.filter(name=tmpl_name).exists():
-                tmpl_name = f"{base_name} ({counter})"
-                counter += 1
+        if is_rejected:
+            subject = f"Application Update: {status_obj.name}"
+            body = (
+                "Dear {{ applicant_name }},\n\n"
+                "We regret to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
+                "Status: {{ current_status }}\n\n"
+                "Our team is available to discuss your file and explore next steps or alternative solutions.\n\n"
+                "Best regards,\nThe {{ company_name }} Team"
+            )
+        elif is_approved:
+            subject = f"Congratulations! Application Status: {status_obj.name}"
+            body = (
+                "Dear {{ applicant_name }},\n\n"
+                "We are delighted to inform you that your application (ID: {{ applicant_id }}) for {{ visa }} ({{ country }}) has been updated.\n\n"
+                "Status: {{ current_status }}\n\n"
+                "Our processing team will contact you shortly regarding the next steps.\n\n"
+                "Best regards,\nThe {{ company_name }} Team"
+            )
+        else:
+            subject = f"Application Update: {status_obj.name}"
+            body = (
+                "Dear {{ applicant_name }},\n\n"
+                "We are writing to inform you that your application (ID: {{ applicant_id }}) status has been updated.\n\n"
+                "Status: {{ current_status }}\n\n"
+                "If you have any questions or require further assistance, please do not hesitate to contact our team.\n\n"
+                "Best regards,\nThe {{ company_name }} Team"
+            )
 
-            EmailTemplate.objects.create(
+        # Deduplicate name
+        base_name = tmpl_name
+        counter = 1
+        while tmpl_name in existing_names:
+            tmpl_name = f"{base_name} ({counter})"
+            counter += 1
+
+        existing_names.add(tmpl_name)
+        templates_to_create.append(
+            EmailTemplate(
                 name=tmpl_name,
                 status=status_obj,
                 subject=subject,
                 body=body,
                 is_active=True,
             )
+        )
 
     # Ensure Payment Received email template exists
-    if not EmailTemplate.objects.filter(name="Payment Received Notification").exists():
-        EmailTemplate.objects.create(
-            name="Payment Received Notification",
-            subject="Payment Confirmation - Receipt {{ receipt_number }}",
-            body=(
-                "Dear {{ applicant_name }},\n\n"
-                "We have successfully received your payment of {{ currency }} {{ amount }} (Receipt No: {{ receipt_number }}).\n\n"
-                "Installment Type: {{ installment_type }}\n"
-                "Payment Date: {{ payment_date }}\n"
-                "Reference: {{ reference }}\n\n"
-                "Thank you for your payment.\n\n"
-                "Best regards,\nThe {{ company_name }} Team"
-            ),
-            is_active=True,
+    if "Payment Received Notification" not in existing_names:
+        templates_to_create.append(
+            EmailTemplate(
+                name="Payment Received Notification",
+                subject="Payment Confirmation - Receipt {{ receipt_number }}",
+                body=(
+                    "Dear {{ applicant_name }},\n\n"
+                    "We have successfully received your payment of {{ currency }} {{ amount }} (Receipt No: {{ receipt_number }}).\n\n"
+                    "Installment Type: {{ installment_type }}\n"
+                    "Payment Date: {{ payment_date }}\n"
+                    "Reference: {{ reference }}\n\n"
+                    "Thank you for your payment.\n\n"
+                    "Best regards,\nThe {{ company_name }} Team"
+                ),
+                is_active=True,
+            )
         )
 
     # Ensure Refund Disbursed email template exists
-    if not EmailTemplate.objects.filter(name="Refund Disbursed Notification").exists():
-        EmailTemplate.objects.create(
-            name="Refund Disbursed Notification",
-            subject="Refund Confirmation - {{ refund_number }}",
-            body=(
-                "Dear {{ applicant_name }},\n\n"
-                "A refund of {{ currency }} {{ amount }} has been processed for your application (ID: {{ applicant_id }}).\n\n"
-                "Refund Date: {{ refund_date }}\n"
-                "Reason: {{ refund_reason }}\n\n"
-                "Best regards,\nThe {{ company_name }} Team"
-            ),
-            is_active=True,
+    if "Refund Disbursed Notification" not in existing_names:
+        templates_to_create.append(
+            EmailTemplate(
+                name="Refund Disbursed Notification",
+                subject="Refund Confirmation - {{ refund_number }}",
+                body=(
+                    "Dear {{ applicant_name }},\n\n"
+                    "A refund of {{ currency }} {{ amount }} has been processed for your application (ID: {{ applicant_id }}).\n\n"
+                    "Refund Date: {{ refund_date }}\n"
+                    "Reason: {{ refund_reason }}\n\n"
+                    "Best regards,\nThe {{ company_name }} Team"
+                ),
+                is_active=True,
+            )
         )
+
+    if templates_to_create:
+        EmailTemplate.objects.bulk_create(templates_to_create)
 
 
 class EmailTemplateViewSet(ModelViewSet):
@@ -343,12 +367,6 @@ class EmailTemplateViewSet(ModelViewSet):
     ]
 
     def get_queryset(self):
-        try:
-            ensure_templates_for_all_statuses()
-        except Exception as exc:
-            import logging
-            logging.getLogger(__name__).warning(f"Error ensuring templates for all statuses: {exc}")
-
         return (
             EmailTemplate.objects.select_related(
                 "status",
@@ -358,6 +376,16 @@ class EmailTemplateViewSet(ModelViewSet):
                 "name",
             )
         )
+
+    def list(self, request, *args, **kwargs):
+        # Ensure templates exist only on list (not every get_queryset call)
+        # and only if there are new statuses without templates
+        try:
+            ensure_templates_for_all_statuses()
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(f"Error ensuring templates for all statuses: {exc}")
+        return super().list(request, *args, **kwargs)
 
     search_fields = [
         "name",
