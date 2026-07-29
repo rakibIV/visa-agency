@@ -6,69 +6,126 @@
 [![Swagger](https://img.shields.io/badge/OpenAPI-Swagger_UI-85EA2D?logo=swagger&logoColor=black)](https://swagger.io/)
 [![Cloudinary](https://img.shields.io/badge/Cloudinary-Media_CDN-3448C5?logo=cloudinary&logoColor=white)](https://cloudinary.com/)
 
-A enterprise-grade RESTful API backend built for visa consulting agencies. Powers applicant lifecycle management, multi-currency conversion, money receipt generation, staff allocations, custom brand logo variations, and automated email dispatching.
+An enterprise-grade RESTful API backend powering visa agency operations. Features high-precision multi-currency conversion, live & manual exchange rate engines, query optimization architectures (eliminating N+1 queries), staff slot allocation limits, money receipt generation, and automated email notifications.
 
 ---
 
-## 🌟 Architecture & Core Modules
+## 🏛️ System Architecture & Data Schema
 
-### 📋 `applicant`
-* **Applicant Lifecycle**: State-machine tracking status transitions (Submitted, In Review, Visa Approved, Ticket Stamping, Handover, Rejected, Refunded).
-* **Payment & Receipt Engine**: Automated money receipt creation, multi-currency conversion (BDT, EUR, GBP, USD), and high-precision exchange rate tracking.
-* **Refund Tracking**: Agreement clause compliance, refundable amount calculations, and bank transfer record management.
-* **Performance Query Selectors**: Subquery annotations and precomputed counts eliminating N+1 database queries.
-
-### 👥 `staff`
-* **Team Members & Hierarchy**: Parent staff and sub-staff allocation mappings.
-* **Monthly Slot Allocation Engine**: Monthly quota limits, used slot tracking, and remaining capacity calculations.
-* **Performance & Rankings**: Monthly/Yearly rank metrics and manual/dummy visa statistics (Approved, Rejected, Processing additions).
-* **Public Profile Credentials**: Secure public profile endpoints and QR code payload verification.
-
-### 🏛️ `agency`
-* **Company Information & Branding**: Organization configuration, money receipt notes, and default policies.
-* **Company Logo Variations**: Multi-logo asset storage (Primary Header Logo, Signature Seal, Reverse Dark Logo, White Logo, Badge Icon) ordered by serial numbers.
-* **Email Templates**: Dynamic template engine supporting status-triggered automated emails and Generous Email Templates with custom header logo variations.
-* **Lawyers & Branch Offices**: Legal representative details and agency office locations.
-
-### ✈️ `visa` & `country`
-* **Visa Categories & Services**: Country-wise visa types, job positions, pricing structures, and required document checklists.
+```
+ +-----------------------------------------------------------------------+
+ |                     Visa Agency REST API Backend                      |
+ +-----------------------------------+-----------------------------------+
+                                     |
+    +-----------------+--------------+--------------+-----------------+
+    |                 |                             |                 |
++---v----+       +----v----+                   +----v----+       +----v----+
+|  user  |       | agency  |                   | staff   |       | visa    |
+| (Auth) |       | (Logos, |                   | (Slots, |       | (Jobs,  |
++--------+       | Emails) |                   | Sub-St) |       | Docs)   |
+                 +----+----+                   +----+----+       +---------+
+                      |                             |
+                      +--------------+--------------+
+                                     |
+                                +----v----+
+                                |applicant|
+                                |(Payments|
+                                | Status) |
+                                +---------+
+```
 
 ---
 
-## 🚀 Key Technical Highlights
+## 💱 Deep Dive: Multi-Currency & Automatic Exchange Rate Engine
 
-* **High-Precision Multi-Currency Engine**: Reversible Base-to-EUR calculation supporting custom manual rates with strict 8-decimal place precision validation.
-* **Database Query Optimization**: Optimized querysets utilizing `select_related`, `prefetch_related`, and subquery annotations to reduce DB queries from $N+1$ down to single-digit batch queries.
-* **Media & Cloud Storage**: Seamless Cloudinary CDN integration for document attachments, applicant photos, company logos, and signature seals.
-* **Automated PDF & Email Notifications**: Django HTML email templating with dynamic context variable placeholders (`{{ applicant_name }}`, `{{ current_status }}`, etc.).
+The backend features a robust **Multi-Currency & Exchange Rate Engine** (`applicant/services.py` & `applicant/currency.py`):
+
+### 1. Hybrid Automatic & Manual Rate Resolution
+When a payment is recorded or updated:
+* **Manual Rate Mode**: If a `manual_exchange_rate` is provided by the frontend (computed as $\text{Base Amount} \div \text{Euro Amount}$), the engine uses the specified manual rate.
+* **Automatic Live Rate Mode**: If no manual rate is provided, the backend automatically queries the live exchange rate provider (`get_exchange_rate(from_currency)`). If the live API is unreachable, it automatically falls back to pre-configured fallback exchange rates (`get_fallback_exchange_rate()`).
+
+### 2. High-Precision Ratio Calculation & DB Storage
+* The engine normalizes all currencies relative to **EUR**.
+* Stores high-precision ratios with $10^{-8}$ decimal places (`quantize(Decimal("0.00000001"))`) to prevent rounding errors across multiple transaction log summaries.
+* Validates incoming decimal inputs to guarantee compliance with DRF's `DecimalField(max_digits=18, decimal_places=8)` constraint.
+
+---
+
+## 🚀 Deep Dive: Database Query & N+1 Optimization Architecture
+
+To ensure high performance under heavy load, the backend features optimized queryset selectors (`staff/selectors.py` & `applicant/selectors.py`):
+
+### 1. Subquery Annotations for Staff Monthly Slots
+* Rather than invoking `obj.applicants.count()` inside serializer loops (which previously triggered $N+1$ SQL queries for every slot of every staff member), `get_staff_queryset` pre-computes slot usage directly in SQL:
+  ```python
+  Prefetch(
+      "monthly_slots",
+      queryset=StaffMonthlySlot.objects.annotate(
+          used_slots_count=Count("applicants")
+      ).order_by("-allocation_month"),
+  )
+  ```
+* Reduced database query counts on staff list endpoints (`/api/staffs/`) from hundreds of queries down to **4 batch queries total**.
+
+### 2. Status Classification State Engine
+* `get_status_classification()` dynamically categorizes active application statuses into `approved_ids` and `rejected_ids` in a single query pass.
+* Automatically classifies every status occurring after the **"Visa Approved"** stage as an approved milestone for performance statistics and public profile reporting.
+
+---
+
+## 📧 Email Templates & Brand Logo Variations Data Model
+
+The `agency` app manages email template definitions and brand logo assets:
+
+### `CompanyLogo` Model
+* Allows agencies to upload custom brand logo variations (e.g. *Primary Header Logo*, *Signature Seal*, *Reverse Dark Logo*, *White Logo*, *Badge Icon*) ordered by `serial_number`.
+
+### `EmailTemplate` Model
+* **Standard Status Templates**: Linked to specific `ApplicationStatus` models for automated transactional emails.
+* **Generous Email Templates**: Configured with `is_generous=True`, `top_left_logo`, and `top_center_logo` fields, rendering a clean text layout without standard header/footer banners.
+
+---
+
+## 📑 Core API Endpoints Reference
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/applicants/` | `GET`, `POST` | List and create visa applicants |
+| `/api/applicants/{id}/` | `GET`, `PATCH`, `DELETE` | Retrieve, update, or soft-delete applicant profile |
+| `/api/applicants/{id}/payments/` | `GET`, `POST` | Payment records with automatic EUR & rate conversion |
+| `/api/staffs/` | `GET`, `POST` | Team members list (with pre-computed slot counts) |
+| `/api/staffs/{id}/monthly-slots/` | `GET`, `POST` | Monthly slot allocations for team members |
+| `/api/company-logos/` | `GET`, `POST`, `PATCH` | Company logo variations ordered by serial numbers |
+| `/api/email-templates/` | `GET`, `POST`, `PATCH` | Email templates (General, Status, and Generous) |
+| `/api/public/verify-staff/{id}/` | `GET` | Public staff profile credentials & QR code verification |
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technology |
+| Layer | Technology |
 | :--- | :--- |
 | **Language** | Python 3.12+ |
-| **Framework** | Django 5.x / 6.x |
-| **REST API** | Django REST Framework (DRF) |
+| **Web Framework** | Django 5.x / 6.x |
+| **API Framework** | Django REST Framework (DRF) |
 | **Database** | PostgreSQL / SQLite3 |
 | **Media Storage** | Cloudinary CDN |
 | **Documentation** | drf-spectacular / OpenAPI / Swagger UI |
-| **CORS Control** | django-cors-headers |
 
 ---
 
-## 📂 Project Structure
+## 📂 Directory Structure
 
 ```
 Visa Agency Website/
 ├── agency/                 # Company information, logo variations, email templates
-├── applicant/              # Applicants, payment receipts, status history, selectors
-├── staff/                  # Team members, monthly slots, sub-staff allocations
+├── applicant/              # Applicants, payments, currency conversion, selectors
+├── staff/                  # Staff members, monthly slots, sub-staff allocations
 ├── visa/                   # Visa titles, job catalog, document requirements
 ├── country/                # Destination countries & guidelines
-├── core/                   # Shared utilities, validators, choices
-├── api/                    # API routing, public endpoints, swagger configuration
+├── core/                   # Shared validators, choices, helper functions
+├── api/                    # API routing, public endpoints, swagger schema
 ├── Visa_Web_Service/       # Django project configuration & settings
 ├── manage.py
 └── requirements.txt
@@ -76,51 +133,44 @@ Visa Agency Website/
 
 ---
 
-## 🛠️ Getting Started & Local Setup
+## 🚀 Setup & Local Execution
 
 ### Prerequisites
 * **Python**: `3.11+` or `3.12+`
-* **pip** & **virtualenv**
 
-### Local Environment Setup
+### Installation Commands
 
-1. **Clone the repository**:
+1. **Clone Repository**:
    ```bash
    git clone https://github.com/rakibIV/visa-agency.git
    cd visa-agency
    ```
 
-2. **Create & activate virtual environment**:
+2. **Setup Environment & Dependencies**:
    ```bash
    python -m venv visa-env
    # On Windows:
    visa-env\Scripts\activate
-   ```
+   # On Linux/macOS:
+   source visa-env/bin/activate
 
-3. **Install dependencies**:
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Apply database migrations**:
+3. **Database Migration**:
    ```bash
    python manage.py migrate
    ```
 
-5. **Create administrative superuser**:
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-6. **Run development server**:
+4. **Run Server**:
    ```bash
    python manage.py runserver 8000
    ```
-   * Server API: `http://localhost:8000/api/`
+   * REST API Base: `http://localhost:8000/api/`
    * Swagger Documentation: `http://localhost:8000/api/docs/`
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See `LICENSE` for details.
