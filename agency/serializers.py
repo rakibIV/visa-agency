@@ -133,6 +133,9 @@ class EmailTemplateSerializer(serializers.ModelSerializer):
             "subject",
             "body",
             "is_active",
+            "is_generous",
+            "top_left_logo",
+            "top_center_logo",
         ]
 
 
@@ -373,6 +376,9 @@ class EmailTemplateSerializer(serializers.ModelSerializer):
             "subject",
             "body",
             "is_active",
+            "is_generous",
+            "top_left_logo",
+            "top_center_logo",
         ]
 
 

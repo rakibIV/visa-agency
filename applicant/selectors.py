@@ -586,14 +586,16 @@ def get_staff_statistics(staff):
     real_total = stats["total"] or 0
     real_approved = stats["real_approved"] or 0
     real_rejected = stats["real_rejected"] or 0
-    processing = max(0, real_total - real_approved - real_rejected)
+    real_processing = max(0, real_total - real_approved - real_rejected)
 
     fake_approved = getattr(staff, "fake_approved_count", 0) or 0
     fake_rejected = getattr(staff, "fake_rejected_count", 0) or 0
+    fake_processing = getattr(staff, "fake_processing_count", 0) or 0
 
     approved = real_approved + fake_approved
     rejected = real_rejected + fake_rejected
-    total = real_total + fake_approved + fake_rejected
+    processing = real_processing + fake_processing
+    total = real_total + fake_approved + fake_rejected + fake_processing
 
     return {
         "total": total,
@@ -602,8 +604,10 @@ def get_staff_statistics(staff):
         "processing": processing,
         "real_approved": real_approved,
         "real_rejected": real_rejected,
+        "real_processing": real_processing,
         "fake_approved": fake_approved,
         "fake_rejected": fake_rejected,
+        "fake_processing": fake_processing,
     }
 
 

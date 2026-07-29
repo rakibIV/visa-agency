@@ -245,6 +245,7 @@ class StaffSerializer(serializers.ModelSerializer):
             "yearly_rank",
             "fake_approved_count",
             "fake_rejected_count",
+            "fake_processing_count",
             "monthly_slots",
         ]
 
@@ -334,6 +335,7 @@ class StaffCreateUpdateSerializer(serializers.ModelSerializer):
             "yearly_rank",
             "fake_approved_count",
             "fake_rejected_count",
+            "fake_processing_count",
             "public_slug",
             "is_public",
         ]
@@ -517,6 +519,7 @@ class StaffDetailSerializer(serializers.ModelSerializer):
             "yearly_rank",
             "fake_approved_count",
             "fake_rejected_count",
+            "fake_processing_count",
             "public_slug",
             "is_public",
             "monthly_slots",

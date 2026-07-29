@@ -174,6 +174,7 @@ class StaffMonthlySlotViewSet(ModelViewSet):
                 "staff",
             )
             .annotate(
+                used_slots_count=Count("applicants", distinct=True),
                 remaining_slot=F("total_slot") - Count("applicants", distinct=True) - Coalesce(Subquery(sub_staff_allocated_sum), 0),
             )
             .order_by(

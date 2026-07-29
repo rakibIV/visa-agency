@@ -21,11 +21,14 @@ def get_staff_queryset():
             "designation",
             "office",
             "reference_staff",
+            "reference_staff__user",
         )
         .prefetch_related(
             Prefetch(
                 "monthly_slots",
-                queryset=StaffMonthlySlot.objects.order_by(
+                queryset=StaffMonthlySlot.objects.annotate(
+                    used_slots_count=Count("applicants")
+                ).order_by(
                     "-allocation_month",
                 ),
             ),

@@ -160,6 +160,11 @@ class Staff(BaseModel):
         help_text="Manual/fake addition to lifetime rejected visa count.",
     )
 
+    fake_processing_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Manual/fake addition to lifetime processing visa count.",
+    )
+
     monthly_rank = models.PositiveIntegerField(
         blank=True,
         null=True,

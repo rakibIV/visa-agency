@@ -320,6 +320,25 @@ Available Variables:
         default=True,
     )
 
+    is_generous = models.BooleanField(
+        default=False,
+        help_text="Flag for generous email template with simple layout.",
+    )
+
+    top_left_logo = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Optional logo URL or choice for top left.",
+    )
+
+    top_center_logo = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Optional logo URL or choice for top center.",
+    )
+
     class Meta:
         ordering = [
             "name",
