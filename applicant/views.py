@@ -1142,6 +1142,7 @@ class ApplicantStatusHistoryViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
 
     http_method_names = [
         "get",
+        "patch",
         "delete",
         "head",
         "options",

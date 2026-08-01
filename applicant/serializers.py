@@ -1029,7 +1029,6 @@ class ApplicantStatusHistorySerializer(serializers.ModelSerializer):
         read_only_fields = (
             "applicant",
             "id",
-            "created_at",
         )
 
     def get_changed_by_name(self, obj):
