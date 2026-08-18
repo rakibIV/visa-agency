@@ -160,12 +160,15 @@ class VisaNestedViewSetMixin:
     _cached_visa = None
 
     def get_visa(self):
+        if getattr(self, "swagger_fake_view", False):
+            return None
+
         if getattr(self, "_cached_visa", None) is not None:
             return self._cached_visa
 
         visa_value = self.kwargs.get("visa_slug") or self.kwargs.get("visa_pk")
         if not visa_value:
-            raise ValueError("Visa identifier is missing from the nested URL")
+            return None
         
         qs = Visa.objects.filter(slug=visa_value)
         if qs.exists():
@@ -190,8 +193,11 @@ class VisaRequirementViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):
+        visa = self.get_visa()
+        if not visa:
+            return VisaRequirement.objects.none()
         return VisaRequirement.objects.filter(
-            visa=self.get_visa(),
+            visa=visa,
         ).order_by(
             "display_order",
             "title",
@@ -211,8 +217,11 @@ class VisaStepViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):
+        visa = self.get_visa()
+        if not visa:
+            return VisaStep.objects.none()
         return VisaStep.objects.filter(
-            visa=self.get_visa(),
+            visa=visa,
         ).order_by(
             "display_order",
         )
@@ -231,8 +240,11 @@ class VisaFAQViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):
+        visa = self.get_visa()
+        if not visa:
+            return VisaFAQ.objects.none()
         return VisaFAQ.objects.filter(
-            visa=self.get_visa(),
+            visa=visa,
         ).order_by(
             "display_order",
         )
@@ -251,8 +263,11 @@ class VisaSEOViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):
+        visa = self.get_visa()
+        if not visa:
+            return VisaSEO.objects.none()
         return VisaSEO.objects.filter(
-            visa=self.get_visa(),
+            visa=visa,
         )
 
     def perform_create(self, serializer):
@@ -269,10 +284,10 @@ class VisaJobViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     filter_backends = [
-    DjangoFilterBackend,
-    SearchFilter,
-    OrderingFilter,
-]
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
 
     filterset_class = VisaJobFilter
 
@@ -293,8 +308,11 @@ class VisaJobViewSet(VisaNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):
+        visa = self.get_visa()
+        if not visa:
+            return VisaJob.objects.none()
         return VisaJob.objects.filter(
-            visa=self.get_visa(),
+            visa=visa,
         ).prefetch_related(
             "facilities",
         )
@@ -313,8 +331,11 @@ class JobFacilityViewSet(ModelViewSet):
     ]
 
     def get_queryset(self):
+        job_pk = self.kwargs.get("job_pk")
+        if not job_pk or getattr(self, "swagger_fake_view", False):
+            return JobFacility.objects.none()
         return JobFacility.objects.filter(
-            job_id=self.kwargs.get("job_pk"),
+            job_id=job_pk,
         )
 
     def perform_create(self, serializer):

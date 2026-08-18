@@ -1008,6 +1008,7 @@ class ApplicantStatusHistorySerializer(serializers.ModelSerializer):
     )
 
     changed_by_name = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(required=False)
 
     class Meta:
         model = ApplicantStatusHistory

@@ -85,10 +85,12 @@ class CountryNestedViewSetMixin:
     _cached_country = None
 
     def get_country(self):
+        if getattr(self, "swagger_fake_view", False):
+            return None
         if getattr(self, "_cached_country", None) is None:
             country_value = self.kwargs.get("country_slug") or self.kwargs.get("country_pk")
             if not country_value:
-                raise ValueError("Country identifier is missing from the nested URL")
+                return None
             self._cached_country = get_object_or_404(Country, slug=country_value)
         return self._cached_country
 
@@ -98,7 +100,10 @@ class CountryFAQViewSet(CountryNestedViewSetMixin, ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return CountryFAQ.objects.filter(country=self.get_country())
+        country = self.get_country()
+        if not country:
+            return CountryFAQ.objects.none()
+        return CountryFAQ.objects.filter(country=country)
 
     def perform_create(self, serializer):
         serializer.save(country=self.get_country())
@@ -109,7 +114,10 @@ class CountryGalleryViewSet(CountryNestedViewSetMixin, ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return CountryGallery.objects.filter(country=self.get_country())
+        country = self.get_country()
+        if not country:
+            return CountryGallery.objects.none()
+        return CountryGallery.objects.filter(country=country)
 
     def perform_create(self, serializer):
         serializer.save(country=self.get_country())
@@ -122,13 +130,13 @@ class CountryRequirementViewSet(CountryNestedViewSetMixin, ModelViewSet):
     filterset_fields = ["requirement_type"]  # Handled country filtering via URL route instead
 
     def get_queryset(self):
-        return CountryRequirement.objects.filter(country=self.get_country())
+        country = self.get_country()
+        if not country:
+            return CountryRequirement.objects.none()
+        return CountryRequirement.objects.filter(country=country)
 
     def perform_create(self, serializer):
         serializer.save(country=self.get_country())
-
-
-
 
 
 class CountrySEOViewSet(CountryNestedViewSetMixin, ModelViewSet):
@@ -136,7 +144,10 @@ class CountrySEOViewSet(CountryNestedViewSetMixin, ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return CountrySEO.objects.filter(country=self.get_country())
+        country = self.get_country()
+        if not country:
+            return CountrySEO.objects.none()
+        return CountrySEO.objects.filter(country=country)
 
     def perform_create(self, serializer):
         serializer.save(country=self.get_country())

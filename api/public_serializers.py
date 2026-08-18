@@ -55,6 +55,8 @@ class PublicApplicantPaymentSerializer(serializers.ModelSerializer):
 
 
 class PublicApplicantRefundSerializer(serializers.ModelSerializer):
+    receipt_number = serializers.SerializerMethodField()
+
     class Meta:
         model = ApplicantRefund
         fields = [
@@ -66,6 +68,10 @@ class PublicApplicantRefundSerializer(serializers.ModelSerializer):
             "receipt_number",
             "created_at",
         ]
+
+    def get_receipt_number(self, obj):
+        receipt = obj.receipts.first()
+        return receipt.receipt_number if receipt else None
 
 
 class PublicApplicantStatusSerializer(serializers.ModelSerializer):

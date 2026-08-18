@@ -1161,10 +1161,32 @@ class ApplicantStatusHistoryViewSet(ApplicantNestedViewSetMixin, ModelViewSet):
     ]
 
     def get_queryset(self):  # type: ignore[override]
+        applicant = self.get_applicant()
+        if not applicant:
+            return ApplicantStatusHistory.objects.none()
+        return get_status_history(applicant)
 
-        return get_status_history(
-            self.get_applicant(),
-        )
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        applicant = instance.applicant
+        latest_history = ApplicantStatusHistory.objects.filter(
+            applicant=applicant,
+        ).order_by("-created_at").first()
+        if latest_history and latest_history.id == instance.id and instance.new_status:
+            if applicant.status_id != instance.new_status_id:
+                applicant.status = instance.new_status
+                applicant.save(update_fields=["status", "updated_at"])
+
+    def perform_destroy(self, instance):
+        applicant = instance.applicant
+        instance.delete()
+        latest_history = ApplicantStatusHistory.objects.filter(
+            applicant=applicant,
+        ).order_by("-created_at").first()
+        if latest_history and latest_history.new_status:
+            if applicant.status_id != latest_history.new_status_id:
+                applicant.status = latest_history.new_status
+                applicant.save(update_fields=["status", "updated_at"])
 
 from .serializers import FakeLiveResultSerializer
 class FakeLiveResultViewSet(ModelViewSet):
