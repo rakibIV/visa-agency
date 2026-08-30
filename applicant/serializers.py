@@ -1,9 +1,12 @@
+import re
 from rest_framework import serializers
 
 from agency.models import (
     Lawyer,
     EmailTemplate as AgencyEmailTemplate,
 )
+from staff.models import StaffMonthlySlot
+from visa.models import VisaJob
 from country.serializers import CountrySerializer
 
 from .models import (
@@ -294,6 +297,10 @@ class ApplicantManualEmailSerializer(serializers.Serializer):
 # ==========================================================
 
 class ApplicantProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    emergency_contact_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    preferred_refund_method = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = ApplicantProfile
@@ -317,6 +324,33 @@ class ApplicantProfileSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
         )
+
+    def to_internal_value(self, data):
+        if hasattr(data, "dict"):
+            data = data.dict()
+        elif isinstance(data, dict):
+            data = data.copy()
+        else:
+            return super().to_internal_value(data)
+
+        for key in [
+            "father_name", "mother_name", "phone", "email", "occupation",
+            "marital_status", "gender", "nationality",
+            "emergency_contact_name", "emergency_contact_phone", "emergency_contact_relation"
+        ]:
+            if key in data and data[key] in ("", "null", "None", None, "undefined"):
+                data[key] = ""
+
+        if "phone" in data and data["phone"]:
+            data["phone"] = re.sub(r"[\s\-\(\)]", "", str(data["phone"]))
+
+        if "emergency_contact_phone" in data and data["emergency_contact_phone"]:
+            data["emergency_contact_phone"] = re.sub(r"[\s\-\(\)]", "", str(data["emergency_contact_phone"]))
+
+        if "preferred_refund_method" in data and data["preferred_refund_method"] in ("", "null", "None", None, "undefined"):
+            data["preferred_refund_method"] = "BANK"
+
+        return super().to_internal_value(data)
 
 
 # ==========================================================
@@ -606,6 +640,26 @@ class ApplicantRefundBankDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def to_internal_value(self, data):
+        if hasattr(data, "dict"):
+            data = data.dict()
+        elif isinstance(data, dict):
+            data = data.copy()
+        else:
+            return super().to_internal_value(data)
+
+        for key in [
+            "account_holder_name", "bank_name", "branch_name", "district_name",
+            "account_number_or_iban", "routing_number", "mobile_number", "country", "notes"
+        ]:
+            if key in data and data[key] in ("", "null", "None", None, "undefined"):
+                data[key] = ""
+
+        if "mobile_number" in data and data["mobile_number"]:
+            data["mobile_number"] = re.sub(r"[\s\-\(\)]", "", str(data["mobile_number"]))
+
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
         return create_or_update_applicant_refund_bank_detail(
@@ -1135,9 +1189,36 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 class ApplicantSerializer(serializers.ModelSerializer):
 
     application_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    profile = ApplicantProfileSerializer(required=False)
-    refund_bank_detail = ApplicantRefundBankDetailSerializer(required=False)
+    profile = ApplicantProfileSerializer(required=False, allow_null=True)
+    refund_bank_detail = ApplicantRefundBankDetailSerializer(required=False, allow_null=True)
     photo = serializers.ImageField(required=False, allow_null=True)
+    status = serializers.PrimaryKeyRelatedField(
+        queryset=ApplicationStatus.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    secondary_job = serializers.PrimaryKeyRelatedField(
+        queryset=VisaJob.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    slot = serializers.PrimaryKeyRelatedField(
+        queryset=StaffMonthlySlot.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    agreement = serializers.PrimaryKeyRelatedField(
+        queryset=AgreementTemplate.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    lawyer = serializers.PrimaryKeyRelatedField(
+        queryset=Lawyer.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    passport_issue_date = serializers.DateField(required=False, allow_null=True)
+    passport_expiry_date = serializers.DateField(required=False, allow_null=True)
 
     class Meta:
         model = Applicant
@@ -1158,26 +1239,81 @@ class ApplicantSerializer(serializers.ModelSerializer):
         import json
         if hasattr(data, "dict"):
             data = data.dict()
-        else:
+        elif isinstance(data, dict):
             data = data.copy()
-            
-        if "profile" in data and isinstance(data["profile"], str):
-            try:
-                data["profile"] = json.loads(data["profile"])
-            except ValueError:
-                pass
-                
-        if "refund_bank_detail" in data and isinstance(data["refund_bank_detail"], str):
-            try:
-                data["refund_bank_detail"] = json.loads(data["refund_bank_detail"])
-            except ValueError:
-                pass
+        else:
+            return super().to_internal_value(data)
 
-        if "lawyer" in data and data["lawyer"] in ("", "null", "None", None):
-            data["lawyer"] = None
+        if "profile" in data:
+            if data["profile"] in ("", "null", "None", None, "undefined", {}):
+                data["profile"] = None
+            elif isinstance(data["profile"], str):
+                try:
+                    data["profile"] = json.loads(data["profile"])
+                except (ValueError, TypeError):
+                    data["profile"] = None
 
-        if "slot" in data and data["slot"] in ("", "null", "None", None):
-            data["slot"] = None
+        if "refund_bank_detail" in data:
+            if data["refund_bank_detail"] in ("", "null", "None", None, "undefined", {}):
+                data["refund_bank_detail"] = None
+            elif isinstance(data["refund_bank_detail"], str):
+                try:
+                    data["refund_bank_detail"] = json.loads(data["refund_bank_detail"])
+                except (ValueError, TypeError):
+                    data["refund_bank_detail"] = None
+
+        if "tags" in data:
+            if data["tags"] in ("", "null", "None", None, "undefined"):
+                data["tags"] = []
+            elif isinstance(data["tags"], str):
+                try:
+                    parsed_tags = json.loads(data["tags"])
+                    if isinstance(parsed_tags, list):
+                        data["tags"] = parsed_tags
+                except (ValueError, TypeError):
+                    pass
+
+        for fk_field in ["lawyer", "slot", "secondary_job", "agreement", "status"]:
+            if fk_field in data and data[fk_field] in ("", "null", "None", None, "undefined"):
+                data[fk_field] = None
+
+        for date_field in ["passport_issue_date", "passport_expiry_date"]:
+            if date_field in data and data[date_field] in ("", "null", "None", None, "undefined"):
+                data[date_field] = None
+
+        if "date_of_birth" in data and isinstance(data["date_of_birth"], str):
+            val = data["date_of_birth"].strip()
+            if "T" in val:
+                data["date_of_birth"] = val.split("T")[0]
+            else:
+                data["date_of_birth"] = val
+
+        if "passport_number" in data and isinstance(data["passport_number"], str):
+            data["passport_number"] = re.sub(r"\s+", "", data["passport_number"]).upper()
+
+        if "nid_number" in data and isinstance(data["nid_number"], str):
+            val = re.sub(r"[\s\-]", "", data["nid_number"])
+            data["nid_number"] = val
+
+        if "application_id" in data and data["application_id"] in ("", "null", "None", None, "undefined"):
+            data["application_id"] = None
+
+        if "photo" in data and data["photo"] in ("", "null", "None", None, "undefined"):
+            data["photo"] = None
+
+        if "payment_plan_installments" in data and data["payment_plan_installments"] not in ("", None):
+            try:
+                data["payment_plan_installments"] = int(data["payment_plan_installments"])
+            except (ValueError, TypeError):
+                data["payment_plan_installments"] = 2
+
+        if not data.get("status"):
+            default_status = (
+                ApplicationStatus.objects.filter(is_default=True, is_active=True).first()
+                or ApplicationStatus.objects.filter(is_active=True).first()
+            )
+            if default_status:
+                data["status"] = str(default_status.id)
 
         return super().to_internal_value(data)
 

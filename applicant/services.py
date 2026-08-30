@@ -766,10 +766,23 @@ def create_applicant(
     else:
         application_id = None
 
+    if not applicant_data.get("status"):
+        default_status = (
+            ApplicationStatus.objects.filter(is_default=True, is_active=True).first()
+            or ApplicationStatus.objects.filter(is_active=True).first()
+        )
+        if default_status:
+            applicant_data["status"] = default_status
+
+    tags_data = applicant_data.pop("tags", None)
+
     applicant = Applicant.objects.create(
         application_id=application_id,
         **applicant_data,
     )
+
+    if tags_data:
+        applicant.tags.set(tags_data)
 
     ApplicantProfile.objects.create(
         applicant=applicant,
@@ -797,6 +810,8 @@ def update_applicant(
     Updates applicant, profile, and refund bank details.
     """
 
+    tags_data = applicant_data.pop("tags", None)
+
     for field, value in applicant_data.items():
         setattr(
             applicant,
@@ -805,6 +820,9 @@ def update_applicant(
         )
 
     applicant.save()
+
+    if tags_data is not None:
+        applicant.tags.set(tags_data)
 
     if profile_data is not None:
 

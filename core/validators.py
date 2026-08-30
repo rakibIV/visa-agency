@@ -13,10 +13,12 @@ PASSPORT_REGEX = re.compile(r"^[A-Za-z0-9]{6,20}$")
 
 
 def validate_passport_number(value):
-    if not PASSPORT_REGEX.match(value):
-        raise ValidationError(
-            "Passport number must contain 6-20 letters or numbers."
-        )
+    if value:
+        cleaned_val = re.sub(r"\s+", "", str(value))
+        if not PASSPORT_REGEX.match(cleaned_val):
+            raise ValidationError(
+                "Passport number must contain 6-20 letters or numbers."
+            )
 
 
 # -----------------------------
@@ -26,10 +28,12 @@ NID_REGEX = re.compile(r"^\d{10}$|^\d{13}$|^\d{17}$")
 
 
 def validate_nid_number(value):
-    if value and not NID_REGEX.match(value):
-        raise ValidationError(
-            "NID must be 10, 13 or 17 digits."
-        )
+    if value:
+        cleaned_val = re.sub(r"[\s\-]", "", str(value))
+        if not NID_REGEX.match(cleaned_val):
+            raise ValidationError(
+                "NID must be 10, 13 or 17 digits."
+            )
 
 
 # -----------------------------
@@ -39,10 +43,12 @@ PHONE_REGEX = re.compile(r"^\+?[0-9]{8,15}$")
 
 
 def validate_phone_number(value):
-    if value and not PHONE_REGEX.match(value):
-        raise ValidationError(
-            "Enter a valid phone number."
-        )
+    if value:
+        cleaned_val = re.sub(r"[\s\-\(\)]", "", str(value))
+        if not PHONE_REGEX.match(cleaned_val):
+            raise ValidationError(
+                "Enter a valid phone number."
+            )
 
 
 # -----------------------------
@@ -81,15 +87,16 @@ def validate_profile_image_dimensions(image):
     dimensions = get_image_dimensions(image)
     if dimensions:
         width, height = dimensions
-        if width != 300 or height != 300:
-            raise ValidationError(f"Profile image must be exactly 300x300 pixels. Uploaded image is {width}x{height} pixels.")
+        if width > 6000 or height > 6000:
+            raise ValidationError("Profile image dimensions cannot exceed 6000x6000 pixels.")
+
 
 def validate_signature_dimensions(image):
     dimensions = get_image_dimensions(image)
     if dimensions:
         width, height = dimensions
-        if width != 300 or height != 80:
-            raise ValidationError(f"Signature image must be exactly 300x80 pixels. Uploaded image is {width}x{height} pixels.")
+        if width > 4000 or height > 4000:
+            raise ValidationError("Signature image dimensions cannot exceed 4000x4000 pixels.")
 
 
 # -----------------------------
@@ -110,7 +117,9 @@ def validate_pdf_size(file):
 image_extension_validator = FileExtensionValidator(
     allowed_extensions=[
         "jpg",
+        "jpeg",
         "png",
+        "webp",
     ]
 )
 
@@ -129,6 +138,7 @@ document_extension_validator = FileExtensionValidator(
         "jpg",
         "jpeg",
         "png",
+        "webp",
     ]
 )
 
@@ -138,4 +148,4 @@ def validate_document_size(file):
     if file.size > max_size:
         raise ValidationError(
             "Document size cannot exceed 10 MB."
-        )
+        )

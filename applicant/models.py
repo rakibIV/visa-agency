@@ -496,8 +496,10 @@ class Applicant(SoftDeleteModel):
     payment_plan_installments = models.PositiveSmallIntegerField(
         default=2,
         choices=(
+            (1, "One Installment"),
             (2, "Two Installments"),
             (3, "Three Installments"),
+            (4, "Four Installments"),
         ),
         help_text="Total expected payment installments for this applicant.",
     )
@@ -740,7 +742,7 @@ class ApplicantProfile(BaseModel):
     )
 
     email = models.EmailField(
-        blank=False,
+        blank=True,
         db_index=True,
     )
 

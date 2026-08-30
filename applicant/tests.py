@@ -369,3 +369,63 @@ class StatusFlowCountingTests(TestCase):
         self.assertIn(st_rej.id, rejected_ids)
 
 
+class ApplicantSerializerPayloadRobustnessTests(TestCase):
+    def setUp(self):
+        self.country = Country.objects.create(name="Germany", currency="EUR")
+        self.visa_category = VisaCategory.objects.create(name="Work")
+        self.visa = Visa.objects.create(
+            country=self.country,
+            category=self.visa_category,
+            name="Job Visa",
+        )
+        self.job = VisaJob.objects.create(
+            visa=self.visa,
+            title="Chef",
+        )
+        self.status = ApplicationStatus.objects.create(
+            name="New",
+            slug="new",
+            is_default=True,
+            is_active=True,
+        )
+
+    def test_create_applicant_with_empty_strings_and_json_profile(self):
+        from applicant.serializers import ApplicantSerializer
+
+        payload = {
+            "full_name": "Karim Hossain",
+            "passport_number": " A1234567 ",
+            "nid_number": "1990 1234 5678 90",
+            "date_of_birth": "1995-05-12T00:00:00.000Z",
+            "visa": str(self.visa.id),
+            "job": str(self.job.id),
+            "secondary_job": "",
+            "slot": "null",
+            "lawyer": "",
+            "agreement": "",
+            "status": "",
+            "passport_issue_date": "",
+            "passport_expiry_date": "null",
+            "payment_plan_installments": "2",
+            "profile": '{"father_name": "Abul Hossain", "phone": "+880 1712-345678", "email": "", "marital_status": ""}',
+            "refund_bank_detail": "",
+        }
+
+        serializer = ApplicantSerializer(data=payload)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        applicant = serializer.save()
+
+        self.assertEqual(applicant.full_name, "Karim Hossain")
+        self.assertEqual(applicant.passport_number, "A1234567")
+        self.assertEqual(applicant.nid_number, "19901234567890")
+        self.assertEqual(str(applicant.date_of_birth), "1995-05-12")
+        self.assertEqual(applicant.status, self.status)
+        self.assertIsNone(applicant.secondary_job)
+        self.assertIsNone(applicant.slot)
+        self.assertIsNone(applicant.lawyer)
+        self.assertIsNone(applicant.passport_issue_date)
+        self.assertEqual(applicant.profile.phone, "+8801712345678")
+        self.assertEqual(applicant.profile.email, "")
+
+
+
