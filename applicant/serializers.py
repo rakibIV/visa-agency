@@ -1305,9 +1305,9 @@ class ApplicantSerializer(serializers.ModelSerializer):
             try:
                 data["payment_plan_installments"] = int(data["payment_plan_installments"])
             except (ValueError, TypeError):
-                data["payment_plan_installments"] = 3
+                data["payment_plan_installments"] = 2
         elif "payment_plan_installments" not in data or not data.get("payment_plan_installments"):
-            data["payment_plan_installments"] = 3
+            data["payment_plan_installments"] = 2
 
         if not data.get("status"):
             default_status = (

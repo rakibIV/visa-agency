@@ -494,7 +494,7 @@ class Applicant(SoftDeleteModel):
     )
 
     payment_plan_installments = models.PositiveSmallIntegerField(
-        default=3,
+        default=2,
         choices=(
             (2, "Two Installments"),
             (3, "Three Installments"),
