@@ -67,6 +67,7 @@ class CountrySEOSerializer(serializers.ModelSerializer):
 class CountrySerializer(serializers.ModelSerializer):
     flag = serializers.ImageField(required=False, allow_null=True)
     image = serializers.ImageField(required=False, allow_null=True)
+    code = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Country
@@ -74,6 +75,8 @@ class CountrySerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
+            "code",
+            "nationality",
             "flag",
             "image",
             "is_featured",
@@ -83,6 +86,8 @@ class CountrySerializer(serializers.ModelSerializer):
             "capital",
             "time_zone",
             "short_description",
+            "description",
+            "display_order",
             "is_active",
         ]
 
@@ -90,6 +95,7 @@ class CountrySerializer(serializers.ModelSerializer):
 class CountryDetailSerializer(serializers.ModelSerializer):
     flag = serializers.ImageField(required=False, allow_null=True)
     image = serializers.ImageField(required=False, allow_null=True)
+    code = serializers.CharField(required=False, allow_blank=True)
     requirements = CountryRequirementSerializer(
         many=True,
         read_only=True,
@@ -116,16 +122,20 @@ class CountryDetailSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
+            "code",
+            "nationality",
             "flag",
             "image",
             "is_featured",
-            "short_description",
-            "description",
-            "capital",
             "currency",
             "language",
-            "time_zone",
             "processing_time",
+            "capital",
+            "time_zone",
+            "short_description",
+            "description",
+            "display_order",
+            "is_active",
             "requirements",
             "gallery",
             "faqs",

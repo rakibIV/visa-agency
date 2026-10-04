@@ -105,9 +105,24 @@ class Country(BaseModel):
         verbose_name_plural = "Countries"
 
     def save(self, *args, **kwargs):
-        if not self.slug:
+        if not self.slug and self.name:
             self.slug = slugify(self.name)
-
+        if not self.code and self.name:
+            import re
+            clean = re.sub(r'[^A-Za-z0-9]', '', self.name).upper()
+            base_code = clean[:3] if len(clean) >= 3 else clean.ljust(3, 'X')
+            c_code = base_code
+            counter = 1
+            qs = Country.objects.filter(code=c_code)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            while qs.exists():
+                c_code = f"{base_code[:2]}{counter}"
+                counter += 1
+                qs = Country.objects.filter(code=c_code)
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+            self.code = c_code
         super().save(*args, **kwargs)
 
     def __str__(self):
