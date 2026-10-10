@@ -1444,6 +1444,17 @@ def send_manual_applicant_email(
     template,
     sent_by=None,
 ):
+    recipient_email = getattr(
+        getattr(applicant, "profile", None),
+        "email",
+        "",
+    )
+    if not recipient_email:
+        from rest_framework.exceptions import ValidationError
+        raise ValidationError({
+            "detail": f"Applicant '{applicant.full_name}' ({applicant.application_id or applicant.id}) does not have an email address configured. Please add an email address in the applicant's profile first."
+        })
+
     return send_applicant_email(
         applicant=applicant,
         sender=sender,
@@ -1451,6 +1462,7 @@ def send_manual_applicant_email(
         staff_name=get_staff_display_name(
             sent_by
         ),
+        is_manual=True,
     )
 
 

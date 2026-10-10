@@ -229,7 +229,6 @@ def wrap_in_predesigned_email_template(content, context):
     .header h1 {{ margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff; text-transform: uppercase; line-height: 1.1; }}
     .reference-text {{ margin: 0; font-size: 13px; font-weight: 600; color: #e0f2fe; opacity: 0.95; letter-spacing: 0.3px; }}
     .content {{ padding: 35px 30px; line-height: 1.7; font-size: 15px; color: #334155; }}
-    .footer {{ background-color: #f8fafc; padding: 22px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }}
   </style>
 </head>
 <body>
@@ -260,9 +259,6 @@ def wrap_in_predesigned_email_template(content, context):
     </div>
     <div class='content'>
       {content}
-    </div>
-    <div class='footer'>
-      <p style='margin: 0;'>&copy; {company_name}. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -411,7 +407,9 @@ def send_applicant_email(
         "",
     )
 
-    if not getattr(applicant, "send_email_on_status_change", True):
+    is_manual = extra_context.pop("is_manual", False)
+
+    if not is_manual and not getattr(applicant, "send_email_on_status_change", True):
         import logging
         logging.getLogger(__name__).info(f"Applicant {getattr(applicant, 'id', None)} has status email toggle OFF. Skipping email notification.")
         return None
@@ -419,6 +417,11 @@ def send_applicant_email(
     if not recipient_email:
         import logging
         logging.getLogger(__name__).warning(f"Applicant {getattr(applicant, 'id', None)} has no email address. Skipping email notification.")
+        if is_manual:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({
+                "detail": f"Applicant '{applicant.full_name}' does not have an email address configured in their profile."
+            })
         return None
 
     if sender is None:
@@ -453,6 +456,11 @@ def send_applicant_email(
         if not getattr(sender, "email", None):
             import logging
             logging.getLogger(__name__).warning("No lawyer assigned and system fallback email is not configured. Skipping email notification.")
+            if is_manual:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({
+                    "detail": "No sender email or SMTP configuration found. Please select a lawyer with email credentials, or configure SMTP credentials in Settings > Profile."
+                })
             return None
 
     context = build_email_context(
@@ -467,12 +475,18 @@ def send_applicant_email(
         context=context,
     )
 
-    send_email_from_sender(
+    sent_count = send_email_from_sender(
         sender=sender,
         recipient_email=recipient_email,
         subject=subject,
         body=body,
     )
+
+    if is_manual and sent_count == 0:
+        from rest_framework.exceptions import ValidationError
+        raise ValidationError({
+            "detail": f"Could not dispatch email to '{recipient_email}'. Please check your SMTP settings / credentials."
+        })
 
     return {
         "recipient_email": recipient_email,

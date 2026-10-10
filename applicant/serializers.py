@@ -286,9 +286,7 @@ class ApplicantManualEmailSerializer(serializers.Serializer):
     )
 
     template = serializers.PrimaryKeyRelatedField(
-        queryset=AgencyEmailTemplate.objects.filter(
-            is_active=True,
-        ),
+        queryset=AgencyEmailTemplate.objects.all(),
     )
 
 
@@ -1123,6 +1121,11 @@ class ApplicantListSerializer(serializers.ModelSerializer):
     assigned_staff = serializers.SerializerMethodField()
 
     photo = serializers.ImageField(required=False, allow_null=True)
+    email = serializers.SerializerMethodField()
+
+    def get_email(self, obj):
+        profile = getattr(obj, "profile", None)
+        return getattr(profile, "email", "") or ""
 
     class Meta:
         model = Applicant
@@ -1131,6 +1134,7 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "id",
             "application_id",
             "full_name",
+            "email",
             "photo",
             "passport_number",
             "visa",

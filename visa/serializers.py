@@ -168,6 +168,10 @@ class VisaJobSerializer(serializers.ModelSerializer):
 
 
 class VisaSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(
+        source="name",
+        read_only=True,
+    )
 
     country = CountrySerializer(
         read_only=True,
@@ -182,6 +186,16 @@ class VisaSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    currency = serializers.SerializerMethodField()
+
+    def get_currency(self, obj):
+        job = obj.jobs.filter(is_active=True).first() if hasattr(obj, "jobs") else None
+        if job and job.currency:
+            return job.currency
+        if obj.country and obj.country.currency:
+            return obj.country.currency
+        return "EUR"
+
     class Meta:
         model = Visa
 
@@ -190,10 +204,12 @@ class VisaSerializer(serializers.ModelSerializer):
             "country",
             "category",
             "name",
+            "title",
             "slug",
             "services",
             "minimum_salary",
             "maximum_salary",
+            "currency",
             "minimum_processing_days",
             "maximum_processing_days",
             "duration_in_months",
@@ -202,6 +218,10 @@ class VisaSerializer(serializers.ModelSerializer):
 
 
 class VisaDetailSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(
+        source="name",
+        read_only=True,
+    )
 
     country = CountrySerializer(
         read_only=True,
@@ -241,6 +261,16 @@ class VisaDetailSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    currency = serializers.SerializerMethodField()
+
+    def get_currency(self, obj):
+        job = obj.jobs.filter(is_active=True).first() if hasattr(obj, "jobs") else None
+        if job and job.currency:
+            return job.currency
+        if obj.country and obj.country.currency:
+            return obj.country.currency
+        return "EUR"
+
     class Meta:
         model = Visa
 
@@ -249,12 +279,14 @@ class VisaDetailSerializer(serializers.ModelSerializer):
             "country",
             "category",
             "name",
+            "title",
             "slug",
             "description",
             "services",
             "jobs",
             "minimum_salary",
             "maximum_salary",
+            "currency",
             "working_hours_per_week",
             "overtime_available",
             "minimum_processing_days",

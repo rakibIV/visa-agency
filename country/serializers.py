@@ -68,6 +68,10 @@ class CountrySerializer(serializers.ModelSerializer):
     flag = serializers.ImageField(required=False, allow_null=True)
     image = serializers.ImageField(required=False, allow_null=True)
     code = serializers.CharField(required=False, allow_blank=True)
+    visas_count = serializers.SerializerMethodField()
+
+    def get_visas_count(self, obj):
+        return obj.visas.filter(is_active=True).count()
 
     class Meta:
         model = Country
@@ -89,6 +93,7 @@ class CountrySerializer(serializers.ModelSerializer):
             "description",
             "display_order",
             "is_active",
+            "visas_count",
         ]
 
 
