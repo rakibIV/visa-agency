@@ -1305,15 +1305,18 @@ class ApplicantSerializer(serializers.ModelSerializer):
         if "photo" in data and data["photo"] in ("", "null", "None", None, "undefined"):
             data["photo"] = None
 
-        if "payment_plan_installments" in data and data["payment_plan_installments"] not in ("", None):
-            try:
-                data["payment_plan_installments"] = int(data["payment_plan_installments"])
-            except (ValueError, TypeError):
+        if "payment_plan_installments" in data:
+            if data["payment_plan_installments"] not in ("", None):
+                try:
+                    data["payment_plan_installments"] = int(data["payment_plan_installments"])
+                except (ValueError, TypeError):
+                    data["payment_plan_installments"] = 2
+            else:
                 data["payment_plan_installments"] = 2
-        elif "payment_plan_installments" not in data or not data.get("payment_plan_installments"):
+        elif not self.instance:
             data["payment_plan_installments"] = 2
 
-        if not data.get("status"):
+        if not self.instance and not data.get("status"):
             default_status = (
                 ApplicationStatus.objects.filter(is_default=True, is_active=True).first()
                 or ApplicationStatus.objects.filter(is_active=True).first()
