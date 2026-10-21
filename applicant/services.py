@@ -1,3 +1,6 @@
+import json
+import logging
+import re
 from django.db import transaction
 from django.db.models import Sum
 from rest_framework.exceptions import ValidationError
@@ -11,6 +14,8 @@ from .emailing import (
     get_template_for_status,
     send_applicant_email,
 )
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     AgreementTemplate,
@@ -125,7 +130,11 @@ def build_payment_receipt_snapshot(payment):
         "receipt_number": payment.receipt_number,
         "installment_type": payment.installment_type,
         "installment_label": payment.get_installment_type_display(),
-        "payment_date": payment.payment_date.isoformat()
+        "payment_date": (
+            payment.payment_date.isoformat()
+            if hasattr(payment.payment_date, "isoformat")
+            else str(payment.payment_date)
+        )
         if payment.payment_date
         else None,
         "payment_method": payment.payment_method,
@@ -279,15 +288,29 @@ def build_agreement_context(applicant):
 
     context = {
         "full_name": applicant.full_name,
+        "applicant_name": applicant.full_name,
         "application_id": applicant.application_id,
+        "applicant_id": applicant.application_id,
         "passport_number": applicant.passport_number,
+        "passport": applicant.passport_number,
         "visa": getattr(applicant.visa, "name", ""),
+        "visa_name": getattr(applicant.visa, "name", ""),
         "job": getattr(applicant.job, "title", ""),
+        "job_title": getattr(applicant.job, "title", ""),
         "country": getattr(getattr(applicant.visa, "country", None), "name", ""),
+        "country_name": getattr(getattr(applicant.visa, "country", None), "name", ""),
         "staff": _staff_snapshot(assigned_staff).get("name", ""),
         "company_name": company.get("company_name", ""),
         "company_phone": company.get("phone", ""),
         "company_address": company.get("address", ""),
+        "date_of_birth": str(applicant.date_of_birth or ""),
+        "passport_issue_date": str(applicant.passport_issue_date or ""),
+        "passport_expiry_date": str(applicant.passport_expiry_date or ""),
+        "place_of_birth": applicant.place_of_birth or "",
+        "nid_number": applicant.nid_number or "",
+        "current_country": applicant.current_country or getattr(getattr(applicant.visa, "country", None), "name", ""),
+        "date": timezone.now().strftime("%d/%m/%Y"),
+        "today": timezone.now().strftime("%d/%m/%Y"),
         "refund_percentage": str(refund_breakdown["refund_percentage"]),
         "refundable_payment_total": str(
             refund_breakdown["refundable_payment_total"]
@@ -333,14 +356,51 @@ def build_agreement_context(applicant):
 
 
 def render_agreement_text(text, context):
-    return (text or "").format_map(
-        SafeFormatDict(
-            context.get(
-                "flat",
-                {},
-            )
-        )
-    )
+    if not text:
+        return ""
+
+    flat_context = context.get("flat", {}) if isinstance(context, dict) else {}
+    if not flat_context and isinstance(context, dict):
+        flat_context = context
+
+    # Case-insensitive lookup map
+    lookup = {
+        str(k).lower().strip(): str(v if v is not None else "")
+        for k, v in flat_context.items()
+    }
+
+    # Common aliases matching templateVariables.js
+    if "full_name" in lookup and "applicant_name" not in lookup:
+        lookup["applicant_name"] = lookup["full_name"]
+    if "applicant_name" in lookup and "full_name" not in lookup:
+        lookup["full_name"] = lookup["applicant_name"]
+    if "application_id" in lookup and "applicant_id" not in lookup:
+        lookup["applicant_id"] = lookup["application_id"]
+    if "applicant_id" in lookup and "application_id" not in lookup:
+        lookup["application_id"] = lookup["applicant_id"]
+    if "passport_number" in lookup and "passport" not in lookup:
+        lookup["passport"] = lookup["passport_number"]
+    if "passport" in lookup and "passport_number" not in lookup:
+        lookup["passport_number"] = lookup["passport"]
+    if "visa" in lookup and "visa_name" not in lookup:
+        lookup["visa_name"] = lookup["visa"]
+    if "job" in lookup and "job_title" not in lookup:
+        lookup["job_title"] = lookup["job"]
+    if "country" in lookup and "country_name" not in lookup:
+        lookup["country_name"] = lookup["country"]
+
+    # Match {{ key }} or { key } where key is alphanumeric + underscore
+    pattern = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}")
+
+    def replace_match(match):
+        raw_key = match.group(1) or match.group(2)
+        norm_key = (raw_key or "").lower().strip()
+        return lookup.get(norm_key, match.group(0))
+
+    try:
+        return pattern.sub(replace_match, str(text))
+    except Exception:
+        return str(text)
 
 
 def is_clause_visible_for_applicant(clause, applicant):
@@ -364,6 +424,8 @@ def is_clause_visible_for_applicant(clause, applicant):
     )
 
     if clause.visibility_mode == ClauseVisibilityMode.INCLUDE:
+        if not country_ids:
+            return True
         return country_id in country_ids
 
     if clause.visibility_mode == ClauseVisibilityMode.EXCLUDE:
@@ -420,16 +482,26 @@ def render_agreement_template_for_applicant(template, applicant):
     ]
 
     if not clauses and template.body:
-        clauses = [
-            AgreementTemplateClause(
-                template=template,
-                clause_number=1,
-                title_en=template.title_en or template.title,
-                title_ar=template.title_ar,
-                title_bn=template.title_bn,
-                body_en=template.body,
-            )
-        ]
+        body_text = template.body
+        if body_text.strip().startswith("{"):
+            try:
+                parsed_meta = json.loads(body_text)
+                if isinstance(parsed_meta, dict) and (parsed_meta.get("is_extra") or parsed_meta.get("__is_extra")):
+                    body_text = parsed_meta.get("details") or ""
+            except Exception:
+                pass
+
+        if body_text:
+            clauses = [
+                AgreementTemplateClause(
+                    template=template,
+                    clause_number=1,
+                    title_en=template.title_en or template.title,
+                    title_ar=template.title_ar,
+                    title_bn=template.title_bn,
+                    body_en=body_text,
+                )
+            ]
 
     content = {}
     text = {}
@@ -589,7 +661,6 @@ def preview_applicant_agreement(
     )
 
 
-@transaction.atomic
 def generate_default_applicant_agreements(
     *,
     applicant,
@@ -603,13 +674,22 @@ def generate_default_applicant_agreements(
         "sequence",
         "-version",
     ):
-        agreements.append(
-            generate_applicant_agreement(
-                applicant=applicant,
-                template=template,
-                generated_by=generated_by,
+        try:
+            agreements.append(
+                generate_applicant_agreement(
+                    applicant=applicant,
+                    template=template,
+                    generated_by=generated_by,
+                )
             )
-        )
+        except Exception as e:
+            logger.exception(
+                "Error generating agreement template '%s' (%s) for applicant %s: %s",
+                getattr(template, "title", ""),
+                getattr(template, "id", ""),
+                getattr(applicant, "id", ""),
+                e,
+            )
 
     return agreements
 
@@ -655,7 +735,7 @@ def get_refundable_payment_total(applicant):
             PaymentInstallmentType.SECOND,
             PaymentInstallmentType.THIRD,
         ],
-    ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    ).aggregate(total=Sum("euro_amount"))["total"] or Decimal("0.00")
 
     return Decimal(str(total)).quantize(
         Decimal("0.01")
@@ -714,8 +794,15 @@ def _sync_payment_status(applicant, changed_by=None, send_email=True):
             )
             
         # Generate default agreements when payment is confirmed
-        from applicant.services import generate_default_applicant_agreements
-        generate_default_applicant_agreements(applicant=applicant)
+        try:
+            from applicant.services import generate_default_applicant_agreements
+            generate_default_applicant_agreements(applicant=applicant)
+        except Exception as e:
+            logger.exception(
+                "Failed to auto-generate default agreements on payment confirmation for applicant %s: %s",
+                getattr(applicant, "id", None),
+                e,
+            )
             
         return
 
@@ -1005,7 +1092,7 @@ def create_payment(
 
     if getattr(applicant, "email", None) and getattr(applicant, "send_email_on_status_change", True):
         try:
-            from applicant.emailing import send_applicant_email, get_template_by_name
+            from applicant.emailing import enqueue_applicant_email, get_template_by_name
             tmpl = get_template_by_name("Payment Received Notification")
             if tmpl:
                 context = {
@@ -1016,11 +1103,11 @@ def create_payment(
                     "payment_date": str(payment_date),
                     "reference": reference or "N/A",
                 }
-                send_applicant_email(
+                enqueue_applicant_email(
                     applicant=applicant,
                     template=tmpl,
-                    extra_context=context,
                     sender=applicant.lawyer,
+                    **context
                 )
         except Exception:
             pass
@@ -1186,7 +1273,10 @@ def create_refund_for_rejected_applicant(
                 existing.refundable_payment_total = breakdown["refundable_payment_total"]
                 existing.refund_amount = breakdown["refund_amount"]
                 existing.non_refundable_amount = breakdown["non_refundable_amount"]
-                existing.save(update_fields=["refundable_payment_total", "refund_amount", "non_refundable_amount", "updated_at"])
+                existing.currency = "EUR"
+                existing.exchange_rate = Decimal("1.0")
+                existing.euro_amount = breakdown["refund_amount"]
+                existing.save(update_fields=["refundable_payment_total", "refund_amount", "non_refundable_amount", "currency", "exchange_rate", "euro_amount", "updated_at"])
         return existing
 
     breakdown = calculate_refund_breakdown(
@@ -1225,6 +1315,9 @@ def create_refund_for_rejected_applicant(
         refundable_payment_total=breakdown["refundable_payment_total"],
         refund_amount=breakdown["refund_amount"],
         non_refundable_amount=breakdown["non_refundable_amount"],
+        currency="EUR",
+        exchange_rate=Decimal("1.0"),
+        euro_amount=breakdown["refund_amount"],
         refund_method=refund_method,
         refund_reason=reason,
         generated_from_rejection=True,
@@ -1247,21 +1340,21 @@ def create_refund_for_rejected_applicant(
     if getattr(applicant, "email", None) and getattr(applicant, "send_email_on_status_change", True):
         try:
             from django.utils import timezone
-            from applicant.emailing import send_applicant_email, get_template_by_name
+            from applicant.emailing import enqueue_applicant_email, get_template_by_name
             tmpl = get_template_by_name("Refund Disbursed Notification")
             if tmpl:
                 context = {
                     "refund_number": f"REF-{refund.id}",
                     "amount": str(breakdown.get("refund_amount", 0)),
-                    "currency": "BDT",
+                    "currency": "EUR",
                     "refund_date": str(timezone.localdate()),
                     "refund_reason": reason or "N/A",
                 }
-                send_applicant_email(
+                enqueue_applicant_email(
                     applicant=applicant,
                     template=tmpl,
-                    extra_context=context,
                     sender=applicant.lawyer,
+                    **context
                 )
         except Exception:
             pass
@@ -1421,7 +1514,8 @@ def change_applicant_status(
                     )
                 template = FallbackTemplate()
 
-            send_applicant_email(
+            from applicant.emailing import enqueue_applicant_email
+            enqueue_applicant_email(
                 applicant=applicant,
                 sender=sender,
                 template=template,
@@ -1697,6 +1791,9 @@ def reset_applicant(
     Resets applicant status to the initial default status and clears agreement.
     """
     from .selectors import get_default_application_status, get_application_statuses
+
+    # Lock applicant row to prevent concurrent race conditions during reset
+    applicant = Applicant.objects.select_for_update().get(pk=applicant.pk)
 
     # 1. Delete money receipts and payments
     ApplicantMoneyReceipt.objects.filter(applicant=applicant).delete()

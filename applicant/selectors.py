@@ -85,6 +85,7 @@ def get_applicants():
         )
         .prefetch_related(
             "tags",
+            "payments",
         )
         .order_by(
             "-created_at",

@@ -34,6 +34,19 @@ class ApplicantPaymentCurrencyFieldsTests(SimpleTestCase):
         )
 
 
+class ApplicantRefundCurrencyFieldsTests(SimpleTestCase):
+    def test_refund_model_has_currency_and_euro_amount_fields(self):
+        self.assertTrue(
+            ApplicantRefund._meta.get_field("currency")
+        )
+        self.assertTrue(
+            ApplicantRefund._meta.get_field("euro_amount")
+        )
+        self.assertTrue(
+            ApplicantRefund._meta.get_field("exchange_rate")
+        )
+
+
 class AgreementTemplateClauseSerializerTests(SimpleTestCase):
     def test_clause_serializer_exposes_multilingual_fields(self):
         serializer = AgreementTemplateClauseSerializer()

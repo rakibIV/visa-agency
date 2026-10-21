@@ -1266,6 +1266,26 @@ class ApplicantRefund(BaseModel):
         default=Decimal("0.00"),
     )
 
+    currency = models.CharField(
+        max_length=3,
+        default="EUR",
+        help_text="ISO Currency Code (USD, EUR, BDT, etc.).",
+    )
+
+    exchange_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=8,
+        default=Decimal("1.0"),
+        help_text="Exchange rate snapshot at time of refund.",
+    )
+
+    euro_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Calculated euro equivalent of refund amount.",
+    )
+
     refund_reason = models.TextField(
         blank=True,
     )

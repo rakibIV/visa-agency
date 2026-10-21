@@ -4,6 +4,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.viewsets import ModelViewSet
 
 from core.permissions import IsAdminOrStaff
+from core.pagination import LargePagination
 
 from .filters import AgencyServiceFilter
 from .models import (
@@ -355,6 +356,7 @@ def ensure_templates_for_all_statuses():
 
 class EmailTemplateViewSet(ModelViewSet):
     serializer_class = EmailTemplateSerializer
+    pagination_class = LargePagination
 
     permission_classes = [
         IsAdminOrStaff,
@@ -377,16 +379,6 @@ class EmailTemplateViewSet(ModelViewSet):
             )
         )
 
-    def list(self, request, *args, **kwargs):
-        # Ensure templates exist only on list (not every get_queryset call)
-        # and only if there are new statuses without templates
-        try:
-            ensure_templates_for_all_statuses()
-        except Exception as exc:
-            import logging
-            logging.getLogger(__name__).warning(f"Error ensuring templates for all statuses: {exc}")
-        return super().list(request, *args, **kwargs)
-
     search_fields = [
         "name",
         "subject",
@@ -407,6 +399,7 @@ class EmailTemplateViewSet(ModelViewSet):
 
 class LawyerViewSet(ModelViewSet):
     serializer_class = LawyerSerializer
+    pagination_class = LargePagination
 
     permission_classes = [
         IsAdminOrStaff,

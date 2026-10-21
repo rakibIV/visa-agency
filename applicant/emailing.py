@@ -340,6 +340,7 @@ def send_email_from_sender(
                 password=smtp_password,
                 use_tls=True,
                 fail_silently=False,
+                timeout=5,
             )
 
             message = EmailMessage(
@@ -389,7 +390,6 @@ def send_email_from_sender(
         return 0
 
 
-@transaction.atomic
 def send_applicant_email(
     *,
     applicant,
@@ -506,4 +506,40 @@ def get_staff_display_name(user):
         return full_name
 
     return user.get_username()
+
+
+def enqueue_applicant_email(
+    *,
+    applicant,
+    template,
+    sender=None,
+    staff_name="",
+    **extra_context
+):
+    """
+    Safely dispatches applicant email on transaction commit.
+    Executes directly after the database transaction commits, ensuring
+    database row locks are never held during SMTP network calls.
+    Works natively on Vercel serverless functions without requiring background daemons.
+    """
+    from django.db import transaction
+
+    def _dispatch():
+        try:
+            return send_applicant_email(
+                applicant=applicant,
+                sender=sender,
+                template=template,
+                staff_name=staff_name,
+                **extra_context
+            )
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Failed to send email to applicant {getattr(applicant, 'id', None)}: {exc}"
+            )
+            return None
+
+    transaction.on_commit(_dispatch)
+    return True
 

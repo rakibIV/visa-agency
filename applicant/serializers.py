@@ -259,19 +259,42 @@ class ApplicantStatusEmailUpdateSerializer(serializers.Serializer):
             
         if applicant.status == value:
             return value
-            
-        if not applicant.payments.exists():
-            raise serializers.ValidationError(
-                "Status cannot be updated because the applicant has not made any payments."
-            )
-            
-        if value.slug == "payment-confirmed" or value.name.lower() == "payment confirmed":
-            from .services import is_payment_confirmed
+
+        from core.choices import PaymentInstallmentType
+        from .services import is_payment_confirmed
+
+        status_name_lower = (value.name or "").lower()
+        status_slug_lower = (value.slug or "").lower()
+
+        # Check for 1st Payment status
+        is_1st_payment = "1st payment" in status_name_lower or "1st-payment" in status_slug_lower or "first payment" in status_name_lower
+        if is_1st_payment:
+            if not applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
+                raise serializers.ValidationError(
+                    f"Cannot directly update status to '{value.name}' without making payment. Please record the 1st payment in the applicant's Payments section first."
+                )
+
+        # Check for 2nd Payment status
+        is_2nd_payment = "2nd payment" in status_name_lower or "2nd-payment" in status_slug_lower or "second payment" in status_name_lower
+        if is_2nd_payment:
+            if not applicant.payments.filter(installment_type=PaymentInstallmentType.SECOND).exists():
+                raise serializers.ValidationError(
+                    f"Cannot directly update status to '{value.name}' without making payment. Please record the 2nd installment payment in the applicant's Payments section first."
+                )
+
+        # Check for Payment Confirmed status
+        is_payment_confirmed_status = "payment confirmed" in status_name_lower or "payment-confirmed" in status_slug_lower
+        if is_payment_confirmed_status:
             if not is_payment_confirmed(applicant):
                 raise serializers.ValidationError(
-                    "Cannot update status to Payment Confirmed before all installments are paid."
+                    "Cannot directly update status to 'Payment Confirmed' without making all payments. Please record all required installment payments first."
                 )
-                
+
+        if not applicant.payments.exists() and not (value.slug == "disable" or "disable" in status_name_lower or "reject" in status_name_lower):
+            raise serializers.ValidationError(
+                "Status cannot be updated because the applicant has not made any payments. Please record a payment first."
+            )
+            
         return value
 
 
@@ -703,6 +726,9 @@ class ApplicantRefundSerializer(serializers.ModelSerializer):
             "refundable_payment_total",
             "refund_amount",
             "non_refundable_amount",
+            "currency",
+            "exchange_rate",
+            "euro_amount",
             "refund_reason",
             "refund_method",
             "cheque_number",
@@ -1122,10 +1148,29 @@ class ApplicantListSerializer(serializers.ModelSerializer):
 
     photo = serializers.ImageField(required=False, allow_null=True)
     email = serializers.SerializerMethodField()
+    paid_installments = serializers.SerializerMethodField()
+    has_initial_payment = serializers.SerializerMethodField()
+    has_second_payment = serializers.SerializerMethodField()
+    is_payment_confirmed = serializers.SerializerMethodField()
 
     def get_email(self, obj):
         profile = getattr(obj, "profile", None)
         return getattr(profile, "email", "") or ""
+
+    def get_paid_installments(self, obj):
+        return [p.installment_type for p in obj.payments.all()]
+
+    def get_has_initial_payment(self, obj):
+        from core.choices import PaymentInstallmentType
+        return any(p.installment_type == PaymentInstallmentType.INITIAL for p in obj.payments.all())
+
+    def get_has_second_payment(self, obj):
+        from core.choices import PaymentInstallmentType
+        return any(p.installment_type == PaymentInstallmentType.SECOND for p in obj.payments.all())
+
+    def get_is_payment_confirmed(self, obj):
+        from .services import is_payment_confirmed
+        return is_payment_confirmed(obj)
 
     class Meta:
         model = Applicant
@@ -1146,6 +1191,10 @@ class ApplicantListSerializer(serializers.ModelSerializer):
             "status",
             "status_name",
             "payment_plan_installments",
+            "paid_installments",
+            "has_initial_payment",
+            "has_second_payment",
+            "is_payment_confirmed",
             "assigned_staff",
             "assigned_staff_name",
             "lawyer",
@@ -1377,6 +1426,35 @@ class ApplicantSerializer(serializers.ModelSerializer):
         )
 
         if new_status is not None and getattr(new_status, "id", None) != old_status_id:
+            from core.choices import PaymentInstallmentType
+            from .services import is_payment_confirmed
+
+            status_name_lower = (new_status.name or "").lower()
+            status_slug_lower = (new_status.slug or "").lower()
+
+            is_1st_payment = "1st payment" in status_name_lower or "1st-payment" in status_slug_lower or "first payment" in status_name_lower
+            if is_1st_payment and not applicant.payments.filter(installment_type=PaymentInstallmentType.INITIAL).exists():
+                raise serializers.ValidationError({
+                    "status": f"Cannot directly update status to '{new_status.name}' without making payment. Please record the 1st payment first."
+                })
+
+            is_2nd_payment = "2nd payment" in status_name_lower or "2nd-payment" in status_slug_lower or "second payment" in status_name_lower
+            if is_2nd_payment and not applicant.payments.filter(installment_type=PaymentInstallmentType.SECOND).exists():
+                raise serializers.ValidationError({
+                    "status": f"Cannot directly update status to '{new_status.name}' without making payment. Please record the 2nd installment payment first."
+                })
+
+            is_payment_confirmed_status = "payment confirmed" in status_name_lower or "payment-confirmed" in status_slug_lower
+            if is_payment_confirmed_status and not is_payment_confirmed(applicant):
+                raise serializers.ValidationError({
+                    "status": "Cannot directly update status to 'Payment Confirmed' without making all payments. Please record all installment payments first."
+                })
+
+            if not applicant.payments.exists() and not (new_status.slug == "disable" or "disable" in status_name_lower or "reject" in status_name_lower):
+                raise serializers.ValidationError({
+                    "status": "Status cannot be updated because the applicant has not made any payments. Please record a payment first."
+                })
+
             from .services import change_applicant_status
             request = self.context.get("request")
             user = getattr(request, "user", None)

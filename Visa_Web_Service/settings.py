@@ -332,3 +332,6 @@ LOGGING = {
         },
     },
 }
+
+# Email safety timeout for serverless environments (e.g. Vercel)
+EMAIL_TIMEOUT = 5
